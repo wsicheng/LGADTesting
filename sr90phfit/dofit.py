@@ -95,7 +95,9 @@ def dofitLandGaus(hph, plotname="", *args, **kwargs):
     fwhm = r.Double()
     langaupro(fp, maxx, fwhm)
 
-    return maxx, fp[3]
+    print "Results:", maxx, fp[1], fpe[1], fp[3]
+    # return maxx, fp[3]
+    return fp[1], fpe[1]
 
 def dofitLandGaus2(hph, plotname="", *args, **kwargs):
 
@@ -126,7 +128,7 @@ def dofitLandGaus2(hph, plotname="", *args, **kwargs):
 
 def dofitPolExp(hch1):
 
-    fitf = r.TF1("f1", "([0] + [1]*x + [2]*x^2)*exp([3]*x) + [4]", 50, 550)
+    fitf = r.TF1("f1", "([0] + [1]*x + [2]*x^2)*exp([3]*x) + [4]", 50, 700)
     fitf.SetParameter(0, 3)
     fitf.SetParameter(1, -0.01)
     fitf.SetParameter(2, 1e-5)
@@ -145,7 +147,7 @@ def dofitPolExp(hch1):
     hch2.SetLineColor(r.kGreen+3)
     fit1.SetLineColor(r.kAzure)
 
-    hch1.GetYaxis().SetRangeUser(0, 100)
+    hch1.GetYaxis().SetRangeUser(0, 200)
     hch1.Draw()
     fit1.Draw("same")
 
@@ -154,7 +156,7 @@ def dofitPolExp(hch1):
 
 def dofitExpExp(hch1):
 
-    fitf = r.TF1("f2", "[0]*exp([1]*x) + [2]", 150, 550)
+    fitf = r.TF1("f2", "[0]*exp([1]*x) + [2]", 150, 700)
     fitf.SetParameter(0, 0.3)
     fitf.SetParameter(1, 0.004)
     fitf.SetParameter(2, 1.4)
@@ -170,7 +172,6 @@ def dofitExpExp(hch1):
     hch1.SetMarkerSize(0.8)
     fit1.SetLineColor(r.kAzure)
 
-    # hch1.GetYaxis().SetRangeUser(0, 100)
     hch1.GetYaxis().SetRangeUser(0, 5)
     hch1.Draw()
     fit1.Draw("same")
@@ -180,7 +181,7 @@ def dofitExpExp(hch1):
 
 def dofitExpExpInv(hch1):
 
-    fitf = r.TF1("f3", "[0]*exp(-[1]/x) + [2]", 150, 550)
+    fitf = r.TF1("f3", "[0]*exp(-[1]/x) + [2]", 150, 700)
     fitf.SetParameter(0, 0.3)
     fitf.SetParameter(1, 0.004)
     fitf.SetParameter(2, 1.4)
@@ -196,13 +197,38 @@ def dofitExpExpInv(hch1):
     hch1.SetMarkerSize(0.8)
     fit1.SetLineColor(r.kAzure)
 
-    # hch1.GetYaxis().SetRangeUser(0, 100)
     hch1.GetYaxis().SetRangeUser(0, 5)
     hch1.Draw()
     fit1.Draw("same")
 
     c1.SetTitle("exp * exp(-a/x) fit to the Sr90 runs")
     c1.Print("hei_test.pdf")
+
+def dofitExpExpInvSft(hch1):
+
+    fitf = r.TF1("f4", "[0]*exp([1]/([2]-x)) + [3]", 150, 700)
+    fitf.SetParameter(0, 0.3)
+    fitf.SetParameter(1, 0.004)
+    fitf.SetParameter(2, 700)
+    fitf.SetParameter(3, 1.4)
+
+    c1 = r.TCanvas("c3", "c3", 530, 350)
+
+    hch1.Fit("f4", "0")
+    hch1.Fit("f4", "0")
+    print "Fit result for exp * exp(-1/x):"
+    print fitf.GetParameter(0), fitf.GetParameter(1), fitf.GetParameter(2)
+    fit1 = fitf.Clone()
+
+    hch1.SetMarkerSize(0.8)
+    fit1.SetLineColor(r.kAzure)
+
+    hch1.GetYaxis().SetRangeUser(0, 5)
+    hch1.Draw()
+    fit1.Draw("same")
+
+    c1.SetTitle("exp * exp(-a/x) fit to the Sr90 runs")
+    c1.Print("hesi_test.pdf")
 
 def dofitLine(hch1):
 
@@ -214,7 +240,6 @@ def dofitLine(hch1):
     hch1.SetMarkerSize(0.8)
     fit1.SetLineColor(r.kAzure)
 
-    # hch1.GetYaxis().SetRangeUser(0, 100)
     hch1.GetYaxis().SetRangeUser(0, 5)
     hch1.Draw()
     fit1.Draw("same")
@@ -260,26 +285,52 @@ if __name__ == "__main__":
     ch1_frminlst2 = [     10 ,     10 ,     10 ,     10 ,     10 ,] #      10 ,
     ch1_frmaxlst2 = [     65 ,     65 ,     65 ,     65 ,     65 ,] #      65 ,
 
-    ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
-    ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
-    ch1_lrdivlst = ch1_lrdivlst1 + ch1_lrdivlst2
-    ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
-    ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    # ch1_lrunlist = ch1_lrunlist1
-    # ch1_lrBVlist = ch1_lrBVlist1
-    # ch1_lrdivlst = ch1_lrdivlst1
-    # ch1_frminlst = ch1_frminlst1
-    # ch1_frmaxlst = ch1_frmaxlst1
+    '''
+    Set of points taken by David during last week of October on Sr90, with Fermilab board 
+    sensor on ch1 has guard-ring and ch2 no guard-ring 
+    '''
+    ch1_lrunlist3 = ["Run389","Run402","Run406","Run407","Run410","Run411",]
+    ch1_lrBVlist3 = [    400 ,    500 ,    550 ,    600 ,    600 ,    650 ,]
+    ch1_lrdivlst3 = [     10 ,     10 ,     10 ,     10 ,     20 ,     20 ,]
+    ch1_frminlst3 = [     10 ,     10 ,     10 ,     20 ,     20 ,     25 ,]
+    ch1_frmaxlst3 = [     70 ,     75 ,     75 ,     75 ,    100 ,    135 ,]
 
-    ch2_lrunlist = ch2_lrunlist1
-    ch2_lrBVlist = ch2_lrBVlist1
-    ch2_lrdivlst = ch2_lrdivlst1
+    ch2_lrunlist3 = ["Run388","Run404","Run405","Run408","Run409","Run412",] # "Run403","Run387",
+    ch2_lrBVlist3 = [    400 ,    500 ,    550 ,    600 ,    600 ,    650 ,] #     500 ,    400 ,
+    ch2_lrdivlst3 = [      5 ,     10 ,     10 ,     10 ,     20 ,     20 ,] #      20 ,     10 ,
+    ch2_frminlst3 = [      8 ,     10 ,     10 ,     20 ,     25 ,     40 ,] #      10 ,     10 ,
+    ch2_frmaxlst3 = [     30 ,     65 ,     65 ,     65 ,    100 ,    100 ,] #     100 ,     65 ,
 
-    hch1 = r.TH1F("h_ph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 185, 535)
-    hch2 = r.TH1F("h_pa1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 185, 535)
 
-    hlog1 = r.TH1F("h_logph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 35, 185, 535)
+    # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
+    # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
+    # ch1_lrdivlst = ch1_lrdivlst1 + ch1_lrdivlst2
+    # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
+    # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
+
+    ch1_lrunlist = ch1_lrunlist3
+    ch1_lrBVlist = ch1_lrBVlist3
+    ch1_lrdivlst = ch1_lrdivlst3
+    ch1_frminlst = ch1_frminlst3
+    ch1_frmaxlst = ch1_frmaxlst3
+
+    ch2_lrunlist = ch2_lrunlist3
+    ch2_lrBVlist = ch2_lrBVlist3
+    ch2_lrdivlst = ch2_lrdivlst3
+    ch2_frminlst = ch2_frminlst3
+    ch2_frmaxlst = ch2_frmaxlst3
+
+    # ch2_lrunlist = ch2_lrunlist1
+    # ch2_lrBVlist = ch2_lrBVlist1
+    # ch2_lrdivlst = ch2_lrdivlst1
+
+    hch1 = r.TH1F("h_ph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
+    # hch2 = r.TH1F("h_pa1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
+    hch2 = r.TH1F("h_ph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
+
+    hlog1 = r.TH1F("h_logph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 35, 335, 685)
+    hlog2 = r.TH1F("h_logph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 35, 335, 685)
 
     auxlist = {}
     for i, fn in enumerate(ch1_lrunlist):
@@ -288,23 +339,37 @@ if __name__ == "__main__":
         frmax = ch1_frmaxlst[i]
 
         hph1, hpa1 = generateHists(fn, 1, frmax, frmin)
-        ibin = (bv - 180) / 10
-        v, e = dofitLandGaus(hph1, '_{}_ph_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+        ibin = (bv - 330) / 10
+        v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
         hch1.SetBinContent(ibin, v)
         hch1.SetBinError  (ibin, e)
         hlog1.SetBinContent(ibin, math.log(v))
         hlog1.SetBinError  (ibin, math.log(v)*e/v)
 
-        fargs = {'frmin': 0, 'frmax': 1.2}
-        v, e = dofitLandGaus2(hpa1, '_{}_pa_{}'.format(fn, bv), **fargs)
+        # fargs = {'frmin': 0, 'frmax': 1.2}
+        # v, e = dofitLandGaus2(hpa1, '_{}_pa_{}'.format(fn, bv), **fargs)
+        # hch2.SetBinContent(ibin, v)
+        # hch2.SetBinError  (ibin, e)
+
+    for i, fn in enumerate(ch2_lrunlist):
+        bv = ch2_lrBVlist[i]
+        frmin = ch2_frminlst[i]
+        frmax = ch2_frmaxlst[i]
+
+        hph2, hpa2 = generateHists(fn, 2, frmax, frmin)
+        ibin = (bv - 330) / 10
+        v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
         hch2.SetBinContent(ibin, v)
         hch2.SetBinError  (ibin, e)
+        hlog2.SetBinContent(ibin, math.log(v))
+        hlog2.SetBinError  (ibin, math.log(v)*e/v)
 
     r.gStyle.SetOptStat(0)
 
     hch1.SetMarkerStyle(4)
     hch2.SetMarkerStyle(4)
     hlog1.SetMarkerStyle(4)
+    hlog2.SetMarkerStyle(4)
 
     c1 = r.TCanvas("c0", "c0", 600, 400)
     hch1.Draw()
@@ -324,4 +389,5 @@ if __name__ == "__main__":
     dofitPolExp(hch1)
     dofitExpExp(hlog1)
     dofitExpExpInv(hlog1)
+    dofitExpExpInvSft(hlog1)
     # dofitLine(hlog1)
