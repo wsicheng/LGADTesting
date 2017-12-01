@@ -3,7 +3,7 @@ import sys
 import math
 import ROOT as r
 r.gROOT.SetBatch(1)
-r.gROOT.ProcessLine(".L langaus.C+")
+r.gROOT.ProcessLine(".L langaus.C++")
 from ROOT import langaufit, langaupro
 from array import array
 
@@ -45,6 +45,43 @@ def generateHists(infn, chnum=0, phcut_max=350, phcut_min=0, *args, **kwargs):
     else:
         return hph1, hph2
 
+def generateHists2(infn, phcut_max=350, phcut_min=0, chnum=0, *args, **kwargs):
+    ''' ch1, ch2 will be lists as of pulse heights '''
+
+    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
+    hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
+
+    # hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+    # hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+
+    lines = open("data2/"+infn+".ant").readlines()
+    for line in lines:
+        line = line.split()
+        ph1 = float(line[2])
+        ph2 = float(line[11])
+
+        if ph1 > ph2 and ph1 < phcut_max and ph1 > phcut_min:
+            hph1.Fill(ph1)
+        elif ph2 > ph1 and ph2 < phcut_max and ph2 > phcut_min:
+            hph2.Fill(ph2)
+
+        # pa1 = float(line[3])
+        # pa2 = float(line[12])
+        # hpa1.Fill(pa1)
+        # hpa2.Fill(pa2)
+
+    hph1.SetLineColor(r.kRed)
+    hph2.SetLineColor(r.kBlue)
+
+    # hpa1.SetLineColor(r.kRed)
+    # hpa2.SetLineColor(r.kBlue)
+
+    if chnum == 1:
+        return hph1, hpa1
+    elif chnum == 2:
+        return hph2, hpa2
+    else:
+        return hph1, hph2
 
 def dofitLandau(hch1, plotname="", doDraw=False):
 
@@ -75,9 +112,9 @@ def dofitLandGaus(hph, plotname="", *args, **kwargs):
     fr   = array('d', [kwargs.get('frmin', 20), kwargs.get('frmax', 140)])
     fp   = array('d', [0, 0, 0, 0])
     fpe  = array('d', [0, 0, 0, 0])
-    pllo = array('d', [  0.5,    10,      1,  0.1])
+    pllo = array('d', [  0.5,    10,      1,  0.0])
     plhi = array('d', [10000,  1000, 100000,  100])
-    sv   = array('d', [  1.8,    20,     50,    3])
+    sv   = array('d', [  1.8,    40,     50,    3])
     
     fitr = langaufit(hph,fr,sv,pllo,plhi,fp,fpe);
 
@@ -267,6 +304,10 @@ if __name__ == "__main__":
     coinc_BVlist = [500,500]
     coinc_Tlist = [20.6,15,]
 
+    '''
+    Set of points taken by David  on Sr90, with Kansas board 
+    Information can be found at http://fixels.physics.ucsb.edu/Lgbk/pub/E521.dir/E521.html
+    '''
     ch1_lrunlist1 = ["Run289","Run286","Run300","Run305","Run308","Run310","Run313","Run317","Run320","Run322",]
     ch1_lrBVlist1 = [    520 ,    500 ,    480 ,    460 ,    440 ,    420 ,    400 ,    380 ,    360 ,    340 ,]
     ch1_lrdivlst1 = [     20 ,     20 ,     20 ,     20 ,     20 ,     20 ,     20 ,     20 ,     20 ,     20 ,]
@@ -303,34 +344,51 @@ if __name__ == "__main__":
     ch2_frmaxlst3 = [     30 ,     65 ,     65 ,     65 ,    100 ,    100 ,] #     100 ,     65 ,
 
 
+    '''
+    Set of points taken with the broken fnal sensor, 
+    '''
+    ch1_lrunlist4 = ["Run436","Run431","Run432","Run433","Run434",] # "Run426",
+    ch1_lrBVlist4 = [    450 ,    475 ,    500 ,    525 ,    550 ,] #     550 ,
+    ch1_lrdivlst4 = [      5 ,      5 ,     10 ,     10 ,     20 ,] #      20 ,
+    ch1_frminlst4 = [     10 ,     10 ,     10 ,     10 ,     20 ,] #      25 ,
+    ch1_frmaxlst4 = [     30 ,     30 ,     65 ,     65 ,    120 ,] #     145 ,
+
+
     # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
     # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
     # ch1_lrdivlst = ch1_lrdivlst1 + ch1_lrdivlst2
     # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
     # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    ch1_lrunlist = ch1_lrunlist3
-    ch1_lrBVlist = ch1_lrBVlist3
-    ch1_lrdivlst = ch1_lrdivlst3
-    ch1_frminlst = ch1_frminlst3
-    ch1_frmaxlst = ch1_frmaxlst3
+    ch1_lrunlist = ch1_lrunlist4
+    ch1_lrBVlist = ch1_lrBVlist4
+    ch1_lrdivlst = ch1_lrdivlst4
+    ch1_frminlst = ch1_frminlst4
+    ch1_frmaxlst = ch1_frmaxlst4
 
-    ch2_lrunlist = ch2_lrunlist3
-    ch2_lrBVlist = ch2_lrBVlist3
-    ch2_lrdivlst = ch2_lrdivlst3
-    ch2_frminlst = ch2_frminlst3
-    ch2_frmaxlst = ch2_frmaxlst3
+    ch2_lrunlist = ch2_lrunlist1
+    ch2_lrBVlist = ch2_lrBVlist1
+    ch2_lrdivlst = ch2_lrdivlst1
+    ch2_frminlst = ch2_frminlst1
+    ch2_frmaxlst = ch2_frmaxlst1
 
     # ch2_lrunlist = ch2_lrunlist1
     # ch2_lrBVlist = ch2_lrBVlist1
     # ch2_lrdivlst = ch2_lrdivlst1
 
-    hch1 = r.TH1F("h_ph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
-    # hch2 = r.TH1F("h_pa1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
-    hch2 = r.TH1F("h_ph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 35, 335, 685)
+    drs_flist = [  "Run1",  "Run2",]
+    drs_BVlst = [    300 ,    500 ,]
+    drs_frmin = [     10 ,     10 ,]
+    drs_frmax = [    180 ,    180 ,]
 
-    hlog1 = r.TH1F("h_logph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 35, 335, 685)
-    hlog2 = r.TH1F("h_logph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 35, 335, 685)
+    ch1_lrunlist = []
+    ch2_lrunlist = []
+
+    hch1 = r.TH1F("h_ph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 700, 0, 700)
+    hch2 = r.TH1F("h_ph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 700, 0, 700)
+
+    hlog1 = r.TH1F("h_logph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 700, 0, 700)
+    hlog2 = r.TH1F("h_logph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 700, 0, 700)
 
     auxlist = {}
     for i, fn in enumerate(ch1_lrunlist):
@@ -339,12 +397,11 @@ if __name__ == "__main__":
         frmax = ch1_frmaxlst[i]
 
         hph1, hpa1 = generateHists(fn, 1, frmax, frmin)
-        ibin = (bv - 330) / 10
         v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
-        hch1.SetBinContent(ibin, v)
-        hch1.SetBinError  (ibin, e)
-        hlog1.SetBinContent(ibin, math.log(v))
-        hlog1.SetBinError  (ibin, math.log(v)*e/v)
+        hch1.SetBinContent(bv, v)
+        hch1.SetBinError  (bv, e)
+        hlog1.SetBinContent(bv, math.log(v))
+        hlog1.SetBinError  (bv, math.log(v)*e/v)
 
         # fargs = {'frmin': 0, 'frmax': 1.2}
         # v, e = dofitLandGaus2(hpa1, '_{}_pa_{}'.format(fn, bv), **fargs)
@@ -357,12 +414,30 @@ if __name__ == "__main__":
         frmax = ch2_frmaxlst[i]
 
         hph2, hpa2 = generateHists(fn, 2, frmax, frmin)
-        ibin = (bv - 330) / 10
         v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
-        hch2.SetBinContent(ibin, v)
-        hch2.SetBinError  (ibin, e)
-        hlog2.SetBinContent(ibin, math.log(v))
-        hlog2.SetBinError  (ibin, math.log(v)*e/v)
+        hch2.SetBinContent(bv, v)
+        hch2.SetBinError  (bv, e)
+        hlog2.SetBinContent(bv, math.log(v))
+        hlog2.SetBinError  (bv, math.log(v)*e/v)
+
+
+    for i, fn in enumerate(drs_flist):
+        bv = drs_BVlst[i]
+        frmin = drs_frmin[i]
+        frmax = drs_frmax[i]
+
+        hph1, hph2 = generateHists2(fn, frmax, frmin)
+        print hph1.Integral(), hph2.Integral()
+        v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+        hch1.SetBinContent(bv, v)
+        hch1.SetBinError  (bv, e)
+        hlog1.SetBinContent(bv, math.log(v))
+        hlog1.SetBinError  (bv, math.log(v)*e/v)
+        v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+        hch2.SetBinContent(bv, v)
+        hch2.SetBinError  (bv, e)
+        hlog2.SetBinContent(bv, math.log(v))
+        hlog2.SetBinError  (bv, math.log(v)*e/v)
 
     r.gStyle.SetOptStat(0)
 
@@ -379,15 +454,16 @@ if __name__ == "__main__":
     hch2.Draw()
     c1.Print("hch2_test.pdf")
 
-    f = r.TFile("Sr90_response.root","RECREATE")
+    f = r.TFile("drsData_Sr90response.root","RECREATE")
     hch1.Write()
     hch2.Write()
     hlog1.Write()
+    hlog2.Write()
     f.Close()
 
     # dofitExpExp(hch1)
-    dofitPolExp(hch1)
-    dofitExpExp(hlog1)
-    dofitExpExpInv(hlog1)
-    dofitExpExpInvSft(hlog1)
+    # dofitPolExp(hch1)
+    # dofitExpExp(hlog1)
+    # dofitExpExpInv(hlog1)
+    # dofitExpExpInvSft(hlog1)
     # dofitLine(hlog1)

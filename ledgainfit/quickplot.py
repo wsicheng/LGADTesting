@@ -39,7 +39,7 @@ if __name__ == "__main__":
     ch1_BVlist3 = [ 450, 500, 550, 570, 590, 610, 620, 630, 640, 660, 675, 700]
     ch1_PHlist3 = [ 16.5, 21.2, 28.2, 32.8, 38.5,   45,   49, 53.7, 58.8, 74, 87.6, 137]
     ch2_PHlist3 = [ 15.0, 18.5, 23.0, 25.5, 28.7, 33.1, 36.3, 39.7,   46, 69,   83, 134]
- 
+
     # ch1_BVlist4 = [  0,  30,  50,  70, 100, 200, 250, 300,  350,  400,  440,  470,  500,  520,  540,  550,  560,  570,  580,  590,  600,  610,  620,  630,  640,  650,  660,  670,  680,   690,   700, ]
     # ch1_PHlist4 = [2.1, 2.2, 4.5, 5.7, 6.7, 8.0, 8.8, 9.9, 11.3, 13.3, 15.2, 17.0, 19.5, 21.4, 24.0, 25.4, 26.9, 27.4, 28.3, 30.6, 33.2, 36.6, 40.6, 45.3, 50.4, 56.9, 66.1, 77.7, 94.5, 119.4, 162.4, ]
     # ch2_PHlist4 = [1.3, 1.5, 3.6, 4.8, 5.8, 7.0, 7.7, 8.7, 10.0, 11.7, 13.6, 15.3, 17.5, 19.4, 21.6, 22.9, 24.4, 25.0, 26.9, 29.2, 31.6, 34.5, 38.0, 42.4, 47.3, 53.9, 62.8, 74.5, 91.9, 117.9, 165.6, ]
@@ -75,11 +75,16 @@ if __name__ == "__main__":
     ch1_PH_6Vp3Filter = [ 4.7, 5.2, 5.6, 5.9, 6.7, 7.4, 8.7, 10.6, 13.2, 18.4, 29.6, 47.3, 79.0, ]
     ch2_PH_6Vp3Filter = [ 3.6, 3.8, 4.3, 4.7, 5.1, 6.0, 6.9, 8.2, 10.7, 15.0, 24.7, 41.2, 70.6, ]
 
+    ch1_PH_6V10Filter_1 = [ 2.5, 2.6, 0, 0, 0, 0, 0, 3.5, 0, 4.6, 6.9, 10.4, 17.2, ]
+    ch2_PH_6V10Filter_1 = [ 1.9, 1.9, 0, 0, 0, 0, 0, 2.7, 0, 3.5, 5.3, 8.3, 14.1, ]
+
 
     h1 = createHistogram(BVlist5, ch1_PH_6VnoFilter, "6VnoFilter")
     h2 = createHistogram(BVlist5, ch1_PH_4VnoFilter, "4VnoFilter")
     h3 = createHistogram(BVlist5, ch1_PH_6Vp3Filter, "6Vp3Filter")
     h4 = createHistogram(BVlist5, ch1_PH_4Vp3Filter, "4Vp3Filter")
+
+    h5 = createHistogram(BVlist5, ch1_PH_6V10Filter_1, "6V10Filter")
 
     c1 = r.TCanvas("c1", "c1")
     r.gStyle.SetOptStat(0)
@@ -98,25 +103,37 @@ if __name__ == "__main__":
     h3.SetMarkerColor(r.kTeal)
     h4.SetMarkerColor(r.kAzure)
 
+    h5.SetMarkerStyle(8)
+    h5.SetMarkerSize(0.8)
+    h5.SetMarkerColor(r.kGray)
+
     # h2.Scale(ch1_PH_6VnoFilter[1] / ch1_PH_4VnoFilter[1])
     # h3.Scale(ch1_PH_6VnoFilter[1] / ch1_PH_6Vp3Filter[1])
     # h4.Scale(ch1_PH_6VnoFilter[1] / ch1_PH_4Vp3Filter[1])
+    # h5.Scale(ch1_PH_6VnoFilter[1] / ch1_PH_6V10Filter_1[1])
+
+    h2.Scale(ch1_PH_6VnoFilter[7] / ch1_PH_4VnoFilter[7])
+    h3.Scale(ch1_PH_6VnoFilter[7] / ch1_PH_6Vp3Filter[7])
+    h4.Scale(ch1_PH_6VnoFilter[7] / ch1_PH_4Vp3Filter[7])
+    h5.Scale(ch1_PH_6VnoFilter[7] / ch1_PH_6V10Filter_1[7])
 
     h1.Draw("P")
     h2.Draw("Psame")
     h3.Draw("Psame")
     h4.Draw("Psame")
+    h5.Draw("Psame")
 
     leg = r.TLegend(0.2, 0.7, 0.44, 0.86)
     leg.AddEntry(h1, "ch1 6VnoFilter")
     leg.AddEntry(h2, "ch1 4VnoFilter")
     leg.AddEntry(h3, "ch1 6Vp3Filter")
     leg.AddEntry(h4, "ch1 4Vp3Filter")
+    leg.AddEntry(h5, "ch1 6V10Filter")
 
     leg.Draw()
 
     # c1.SetLogy()
-    c1.SaveAs("scan_ch1_Nov3.pdf")
+    c1.SaveAs("scan_ch1_Nov6.pdf")
 
 
     c1.Clear()

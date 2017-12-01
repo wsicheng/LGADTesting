@@ -9,9 +9,8 @@ r.gROOT.SetBatch(1)
 def generateHists(ch1, ch2, outfn, *args, **xargs):
     ''' ch1, ch2 will be dict with {BiasVoltage: PulseHeight} as items '''
 
-    
-
     xmax = max(ch1.keys()) + 30
+    # xmax = 720
 
     hch1 = r.TH1F("h_ch1", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
     hch2 = r.TH1F("h_ch2", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
@@ -26,7 +25,8 @@ def generateHists(ch1, ch2, outfn, *args, **xargs):
     hlla2 = r.TH2F("h_lla2", "Pulse height vs bias voltage;log(Bias voltage) [+lnV]; log(Pulse hieght) [+lnmV]", 600, 2, 8, 400, 2, 6)
 
     for bv, ph in ch1.items():
-        sft = 20 - abs(ch1[160]); 
+        # sft = 20 - abs(ch1[160])
+        sft = 0
         bv = abs(bv)
         ph = abs(ph) + sft
         if bv < 70: continue
@@ -45,7 +45,8 @@ def generateHists(ch1, ch2, outfn, *args, **xargs):
         hll1.Fill(lbv, lph)
 
     for bv, ph in ch2.items():
-        sft = 20 - abs(ch2[160]); 
+        # sft = 20 - abs(ch2[160])
+        sft = 0
         bv = abs(bv)
         ph = abs(ph) + sft
         if bv < 70: continue
@@ -99,14 +100,15 @@ def generateHists(ch1, ch2, outfn, *args, **xargs):
     hlla2.Write()
 
 
-def combinePlots(hch1, fit1, hph1, fixpt1, fixpt2, suf):
+def combinePlots(hch1, fit1, hph1, fixpt, suf):
 
     c1 = r.TCanvas("cb", "cb", 600, 400)
 
     hch1.Draw()
+    fit1.GetXaxis().SetRangeUser(50, 540)
     fit1.Draw("same")
 
-    scale = 1.0 * hch1.GetBinContent(fixpt1) / hph1.GetBinContent(fixpt2)
+    scale = 1.0 * hch1.GetBinContent(fixpt) / hph1.GetBinContent(fixpt)
     hph1.Scale(scale)
     hph1.SetMarkerStyle(33)
     hph1.SetMarkerSize(1.4)
@@ -183,8 +185,11 @@ def dofitPolExp(fname):
     hph1 = f_sr90.Get("h_ph1s")
     hph2 = f_sr90.Get("h_ph2s")
     # print hch1.GetXaxis().FindBin(400), hch1.GetBinContent(400), hph1.GetBinContent(4)
-    combinePlots(hch1, fit1, hph1, 500, 17, "1")
-    combinePlots(hch2, fit2, hph2, 500, 17, "2")
+    # combinePlots(hch1, fit1, hph1, 500, 17, "1")
+    # combinePlots(hch2, fit2, hph2, 500, 17, "2")
+
+    combinePlots(hch1, fit1, hph1, 500, "1")
+    # combinePlots(hch2, fit2, hph2, 300, "2")
 
     return fit1, fit2
     # print fr1.GetParameter(0), fr1.GetParameter(1), fr1.GetParameter(2), fr1.GetParameter(3), fr1.GetParameter(4)
@@ -335,6 +340,42 @@ def dofitExpExpInv(fname):
 
     return fit1, fit2
 
+def doPlotExpExpInv(fname, lgf1, lgf2):
+
+    f1 = r.TFile(fname+".root")
+    hch1 = f1.Get("h_ch1")
+    hch2 = f1.Get("h_ch2")
+
+    xmax = 720
+
+    fit1 = r.TF1("f8", "exp({0}*exp(-{1}/(x-{2})) + {3})".format(lgf1.GetParameter(0), lgf1.GetParameter(1),
+                                                                 lgf1.GetParameter(2), lgf1.GetParameter(3)), 150, xmax)
+    fit2 = r.TF1("f9", "exp({0}*exp(-{1}/(x-{2})) + {3})".format(lgf2.GetParameter(0), lgf2.GetParameter(1),
+                                                                 lgf2.GetParameter(2), lgf2.GetParameter(3)), 150, xmax)
+    # fr1 = hch1.GetFunction("f3")
+    c1 = r.TCanvas("c8", "c8", 600, 400)
+    hch1.SetMarkerSize(0.8)
+    hch2.SetMarkerSize(0.8)
+    hch2.SetLineColor(r.kGreen+3)
+    fit1.SetLineColor(r.kAzure)
+    fit2.SetLineColor(r.kTeal)
+
+    hch1.GetYaxis().SetRangeUser(0, 200)
+    hch1.Draw()
+    hch2.Draw("same")
+    fit1.Draw("same")
+    # fit2.Draw("same")
+
+    leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
+    leg.AddEntry(fit1, "FNAL S4")
+    # leg.AddEntry(fit2, "CH2 \"no gain\"")
+    leg.Draw()
+
+    c1.Print("hes_"+fname+".pdf")
+
+    return fit1, fit2
+
+
 def readFrom511(fname):
     ch1 = {}
     ch2 = {}
@@ -345,7 +386,7 @@ def readFrom511(fname):
         if line[0] == '#': continue
         ch1[abs(int(line[0]))] = abs(float(line[1]))
         ch2[abs(int(line[0]))] = abs(float(line[3]))
-    
+
     return ch1, ch2
 
 def readFrom523(run1, run2):
@@ -373,7 +414,7 @@ if __name__ == "__main__":
     #     generateHists(ch1, ch2, fn)
     #     dofitPolExp(fn)
     #     dofitExpExp(fn)
-        
+
     # if True:
     #     r1, r2 = readFrom523('1', '2')
     #     generateHists(r1, r2, 'test')
@@ -393,18 +434,18 @@ if __name__ == "__main__":
     #     # dofitPowExp("T11C")
     #     # dofitExpExp("T11C")
 
-    # # LED scan on Fermilab board, source morderate close, no filter, source pulse at 6V (3V passed over)
-    # # Data taken on 2017/10/31 Tue morning
-    # BVlist     = [  0,  30,  50,  70, 100, 200, 250, 300,  350,  400,  440,  470,  500,  520,  540,  560,  580,  590,  600,  610,  620,  630,  640,  650,  660,  670,  680,   690,   700, ]
-    # ch1_PHlist = [2.1, 2.2, 4.5, 5.7, 6.7, 8.0, 8.8, 9.9, 11.3, 13.3, 15.2, 17.0, 19.5, 21.4, 24.0, 26.9, 28.3, 30.6, 33.2, 36.6, 40.6, 45.3, 50.4, 56.9, 66.1, 77.7, 94.5, 119.4, 162.4, ]
-    # ch2_PHlist = [1.3, 1.5, 3.6, 4.8, 5.8, 7.0, 7.7, 8.7, 10.0, 11.7, 13.6, 15.3, 17.5, 19.4, 21.6, 24.4, 26.9, 29.2, 31.6, 34.5, 38.0, 42.4, 47.3, 53.9, 62.8, 74.5, 91.9, 117.9, 165.6, ]
+    # LED scan on Fermilab board, source morderate close, no filter, source pulse at 6V (3V passed over)
+    # Data taken on 2017/10/31 Tue morning
+    BVlist     = [  0,  30,  50,  70, 100, 200, 250, 300,  350,  400,  440,  470,  500,  520,  540,  560,  580,  590,  600,  610,  620,  630,  640,  650,  660,  670,  680,   690,   700, ]
+    ch1_PHlist = [2.1, 2.2, 4.5, 5.7, 6.7, 8.0, 8.8, 9.9, 11.3, 13.3, 15.2, 17.0, 19.5, 21.4, 24.0, 26.9, 28.3, 30.6, 33.2, 36.6, 40.6, 45.3, 50.4, 56.9, 66.1, 77.7, 94.5, 119.4, 162.4, ]
+    ch2_PHlist = [1.3, 1.5, 3.6, 4.8, 5.8, 7.0, 7.7, 8.7, 10.0, 11.7, 13.6, 15.3, 17.5, 19.4, 21.6, 24.4, 26.9, 29.2, 31.6, 34.5, 38.0, 42.4, 47.3, 53.9, 62.8, 74.5, 91.9, 117.9, 165.6, ]
 
     # Quick LED scan on 2017/11/3 Fri afternoon, on Fermilab board, for the purpose of testing the satuation hypothesis
-    BVlist = [ 160, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 680, 700]
-    ch1_PH_4VnoFilter = [ 3.7, 4.0, 4.6, 5.0, 5.7, 6.6, 7.9, 9.9, 12.9, 18.1, 30.0, 48.6, 81.5, ]
-    ch2_PH_4VnoFilter = [ 2.8, 3.0, 3.4, 3.9, 4.6, 5.3, 6.3, 7.8, 10.4, 14.7, 25.0, 41.8, 72.1, ]
-    ch1_PH_6VnoFilter = [ 7.2, 7.9, 8.8, 10.0, 11.4, 13.4, 16.1, 19.7, 25.7, 36.6, 61.1, 100, 171, ]
-    ch2_PH_6VnoFilter = [ 5.8, 6.3, 7.1, 9.1, 9.2, 10.8, 12.9, 16.1, 21.0, 30.3, 51.0, 66.2, 153.5, ]
+    # BVlist =            [ 160, 200, 250,  300,  350,  400,  450,  500,  550,  600,  650,  680, 700, ]
+    ch1_PH_4VnoFilter = [ 3.7, 4.0, 4.6,  5.0,  5.7,  6.6,  7.9,  9.9, 12.9, 18.1, 30.0, 48.6, 81.5, ]
+    ch2_PH_4VnoFilter = [ 2.8, 3.0, 3.4,  3.9,  4.6,  5.3,  6.3,  7.8, 10.4, 14.7, 25.0, 41.8, 72.1, ]
+    ch1_PH_6VnoFilter = [ 7.2, 7.9, 8.8, 10.0, 11.4, 13.4, 16.1, 19.7, 25.7, 36.6, 61.1,  100,  171, ]
+    ch2_PH_6VnoFilter = [ 5.8, 6.3, 7.1,  9.1,  9.2, 10.8, 12.9, 16.1, 21.0, 30.3, 51.0, 66.2, 153.5, ]
 
 
     ch1_PH_4Vp3Filter = [ 2.4, 2.6, 2.8, 3.1, 3.5, 3.9, 4.5, 5.4, 6.8, 9.1, 14.7, 23.3, 38.5, ]
@@ -416,20 +457,32 @@ if __name__ == "__main__":
     ch1_PH_6Vp3Filter = [ 4.7, 5.2, 5.6, 5.9, 6.7, 7.4, 8.7, 10.6, 13.2, 18.4, 29.6, 47.3, 79.0, ]
     ch2_PH_6Vp3Filter = [ 3.6, 3.8, 4.3, 4.7, 5.1, 6.0, 6.9, 8.2, 10.7, 15.0, 24.7, 41.2, 70.6, ]
 
-
     ch1 = {}
     ch2 = {}
     for i in range(0, len(BVlist)):
-        # ch1[BVlist[i]] = ch1_PHlist[i]
-        # ch2[BVlist[i]] = ch2_PHlist[i]
-        ch1[BVlist[i]] = ch1_PH_6VnoFilter[i]
-        ch2[BVlist[i]] = ch1_PH_6VnoFilter[i]
+        ch1[BVlist[i]] = ch1_PHlist[i]
+        ch2[BVlist[i]] = ch2_PHlist[i]
+        # ch1[BVlist[i]] = ch1_PH_6VnoFilter[i]
+        # ch2[BVlist[i]] = ch1_PH_6VnoFilter[i]
 
-    
-    fn = "fnalboard"
+
+    ''' LED scan on the last Fermilab sensor, lableled below as (F)ermilab(S)ensor(4). The sensor is (currently) singly mounted on a carrier board and connected to CH1.
+        Data taken on Nov 30, 2017, morning & afternoon, with interuption between 670 V to do IV scan.
+    '''
+    FS4_BVs_4VnoFilter = [   0,   30,   40,   50,   60,   70,   80,  100,  120,  150,  200,  250,  300,  350,  400,  450,  500,  550,  570,  590,  610,  630,  640,  650,  660,  670,  680,  690,  700,  ]
+    FS4_P2P_4VnoFilter = [ 7.5,  7.6,  9.3, 10.4, 11.0, 11.6, 12.2, 12.5, 13.0, 13.4, 14.3, 15.3, 16.5, 18.3, 20.6, 23.7, 28.0, 35.2, 39.4, 44.7, 52.1, 62.4, 69.5, 77.8, 89.3,  105,  127,  165,  233,  ]
+
+    BVlist = FS4_BVs_4VnoFilter
+    ch1_PHlist = FS4_P2P_4VnoFilter
+    ch1 = {}
+    ch2 = {}
+    for i in range(0, len(BVlist)):
+        ch1[BVlist[i]] = ch1_PHlist[i]
+
+    fn = "fnalsensor4"
     generateHists(ch1, ch2, fn)
     dofitPolExp(fn)
     # dofitExpExp(fn)
     # dofitPowExp(fn)
-    dofitExpExpInv(fn)
-
+    lgf1, lgf2 = dofitExpExpInv(fn)
+    doPlotExpExpInv(fn, lgf1, lgf2)
