@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+import json
 import ROOT as r
 r.gROOT.SetBatch(1)
 r.gROOT.ProcessLine(".L langaus.C++")
@@ -10,11 +11,11 @@ from array import array
 def generateHists(infn, chnum=0, phcut_max=350, phcut_min=0, *args, **kwargs):
     ''' ch1, ch2 will be lists as of pulse heights '''
 
-    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
-    hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 200)
+    hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
 
-    hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
-    hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+    hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 200)
+    hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
 
     lines = open("data/"+infn+".ant").readlines()
     for line in lines:
@@ -82,6 +83,47 @@ def generateHists2(infn, phcut_max=350, phcut_min=0, chnum=0, *args, **kwargs):
         return hph2, hpa2
     else:
         return hph1, hph2
+
+def generateHistsFromJSON(infn, chnum=1, phcut_max=350, phcut_min=0, *args, **kwargs):
+    ''' ch1, ch2 will be lists as of pulse heights '''
+
+    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 300)
+    hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
+
+    # hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
+    # hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+
+    with open("data_drs/"+infn+".json", "r") as fhin:
+        js = json.load(fhin)
+        for line in js.values():
+            ch1 = line['channels'][0]
+            if not ch1['has_peak']: continue
+            ph1 = ch1['pulse_height']
+            pa1 = ch1['pulse_area']
+            if ph1 < phcut_max and ph1 > phcut_min:
+                hph1.Fill(ph1)
+            hpa1.Fill(pa1)
+
+            # ch2 = line['channels'][1]
+            # if not ch2['has_peak']: continue
+            # ph2 = ch2['pulse_height']
+            # pa2 = ch2['pulse_area']
+            # if ph2 < phcut_max and ph2 > phcut_min:
+            #     hph2.Fill(ph2)
+            # hpa2.Fill(pa2)
+
+    hph1.SetLineColor(r.kRed)
+    hpa1.SetLineColor(r.kRed)
+
+    # hph2.SetLineColor(r.kBlue)
+    # hpa2.SetLineColor(r.kBlue)
+
+    if chnum == 1:
+        return hph1, hpa1
+    # elif chnum == 2:
+    #     return hph2, hpa2
+    # else:
+    #     return hph1, hph2
 
 def dofitLandau(hch1, plotname="", doDraw=False):
 
@@ -353,6 +395,14 @@ if __name__ == "__main__":
     ch1_frminlst4 = [     10 ,     10 ,     10 ,     10 ,     20 ,] #      25 ,
     ch1_frmaxlst4 = [     30 ,     30 ,     65 ,     65 ,    120 ,] #     145 ,
 
+    '''
+    Set of points taken with the last fnal sensor (FS4), with guard ring, mounted on a carrier board.
+    '''
+    ch1_lrunlist5 = ["Run658","Run659","Run660","Run661","Run661",]
+    ch1_lrBVlist5 = [    400 ,    500 ,    540 ,    580 ,    680 ,]
+    ch1_lrdivlst5 = [     20 ,     20 ,     20 ,     20 ,    100 ,]
+    ch1_frminlst5 = [     14 ,     14 ,     14 ,     14 ,     50 ,]
+    ch1_frmaxlst5 = [    150 ,    150 ,    150 ,    150 ,    750 ,]
 
     # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
     # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
@@ -360,11 +410,11 @@ if __name__ == "__main__":
     # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
     # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    ch1_lrunlist = ch1_lrunlist4
-    ch1_lrBVlist = ch1_lrBVlist4
-    ch1_lrdivlst = ch1_lrdivlst4
-    ch1_frminlst = ch1_frminlst4
-    ch1_frmaxlst = ch1_frmaxlst4
+    ch1_lrunlist = ["Run659",]
+    ch1_lrBVlist = [    500 ,]
+    ch1_lrdivlst = [     20 ,]
+    ch1_frminlst = [     14 ,]
+    ch1_frmaxlst = [    150 ,]
 
     ch2_lrunlist = ch2_lrunlist1
     ch2_lrBVlist = ch2_lrBVlist1
@@ -376,12 +426,6 @@ if __name__ == "__main__":
     # ch2_lrBVlist = ch2_lrBVlist1
     # ch2_lrdivlst = ch2_lrdivlst1
 
-    drs_flist = [  "Run1",  "Run2",]
-    drs_BVlst = [    300 ,    500 ,]
-    drs_frmin = [     10 ,     10 ,]
-    drs_frmax = [    180 ,    180 ,]
-
-    ch1_lrunlist = []
     ch2_lrunlist = []
 
     hch1 = r.TH1F("h_ph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V];Pulse hieght MPV [mV]", 700, 0, 700)
@@ -390,7 +434,6 @@ if __name__ == "__main__":
     hlog1 = r.TH1F("h_logph1s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 700, 0, 700)
     hlog2 = r.TH1F("h_logph2s", "Pulse height MPV distribution for Sr90;Bias Voltage [V]; log(Pulse hieght MPV) [+lnmV]", 700, 0, 700)
 
-    auxlist = {}
     for i, fn in enumerate(ch1_lrunlist):
         bv = ch1_lrBVlist[i]
         frmin = ch1_frminlst[i]
@@ -421,23 +464,46 @@ if __name__ == "__main__":
         hlog2.SetBinError  (bv, math.log(v)*e/v)
 
 
-    for i, fn in enumerate(drs_flist):
-        bv = drs_BVlst[i]
-        frmin = drs_frmin[i]
-        frmax = drs_frmax[i]
+    drs_flist = [  "Run1",  "Run2",]
+    drs_BVlst = [    300 ,    500 ,]
+    drs_frmin = [     10 ,     10 ,]
+    drs_frmax = [    180 ,    180 ,]
 
-        hph1, hph2 = generateHists2(fn, frmax, frmin)
-        print hph1.Integral(), hph2.Integral()
-        v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
-        hch1.SetBinContent(bv, v)
-        hch1.SetBinError  (bv, e)
-        hlog1.SetBinContent(bv, math.log(v))
-        hlog1.SetBinError  (bv, math.log(v)*e/v)
-        v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
-        hch2.SetBinContent(bv, v)
-        hch2.SetBinError  (bv, e)
-        hlog2.SetBinContent(bv, math.log(v))
-        hlog2.SetBinError  (bv, math.log(v)*e/v)
+    # for i, fn in enumerate(drs_flist):
+    #     bv = drs_BVlst[i]
+    #     frmin = drs_frmin[i]
+    #     frmax = drs_frmax[i]
+
+    #     hph1, hph2 = generateHists2(fn, frmax, frmin)
+    #     print hph1.Integral(), hph2.Integral()
+    #     v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+    #     hch1.SetBinContent(bv, v)
+    #     hch1.SetBinError  (bv, e)
+    #     hlog1.SetBinContent(bv, math.log(v))
+    #     hlog1.SetBinError  (bv, math.log(v)*e/v)
+    #     v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+    #     hch2.SetBinContent(bv, v)
+    #     hch2.SetBinError  (bv, e)
+    #     hlog2.SetBinContent(bv, math.log(v))
+    #     hlog2.SetBinError  (bv, math.log(v)*e/v)
+
+    drs_jsonlist = ["FS4_BV450","FS4_BV500","FS4_BV550","FS4_BV600", ]
+    drs_jsBVlist = [       450 ,       500 ,       550 ,       600 , ]
+    drs_jsdivlst = [        50 ,        50 ,        50 ,        50 , ]
+    drs_jsminlst = [        14 ,        14 ,        14 ,        14 , ]
+    drs_jsmaxlst = [       200 ,       200 ,       200 ,       200 , ]
+
+    # for i, fn in enumerate(drs_jsonlist):
+    #     bv = drs_jsBVlist[i]
+    #     frmin = drs_jsminlst[i]
+    #     frmax = drs_jsmaxlst[i]
+
+    #     hph1, hpa1 = generateHistsFromJSON(fn, 1, frmax, frmin)
+    #     v, e = dofitLandGaus(hph1, '_{}_ph1_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+    #     hch1.SetBinContent(bv, v)
+    #     hch1.SetBinError  (bv, e)
+    #     hlog1.SetBinContent(bv, math.log(v))
+    #     hlog1.SetBinError  (bv, math.log(v)*e/v)
 
     r.gStyle.SetOptStat(0)
 
@@ -454,7 +520,8 @@ if __name__ == "__main__":
     hch2.Draw()
     c1.Print("hch2_test.pdf")
 
-    f = r.TFile("drsData_Sr90response.root","RECREATE")
+    # f = r.TFile("drsData_Sr90response.root","RECREATE")
+    f = r.TFile("FS4_Sr90response.root","RECREATE")
     hch1.Write()
     hch2.Write()
     hlog1.Write()
