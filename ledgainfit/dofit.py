@@ -6,11 +6,12 @@ import math
 import ROOT as r
 r.gROOT.SetBatch(1)
 
-def generateHists(ch1, ch2, outfn, *args, **xargs):
+def generateHists(ch1, ch2, outfn, *args, **kwargs):
     ''' ch1, ch2 will be dict with {BiasVoltage: PulseHeight} as items '''
 
     xmax = max(ch1.keys()) + 30
     # xmax = 720
+    sft = kwargs.get("sft", 0)
 
     hch1 = r.TH1F("h_ch1", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
     hch2 = r.TH1F("h_ch2", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
@@ -26,7 +27,6 @@ def generateHists(ch1, ch2, outfn, *args, **xargs):
 
     for bv, ph in ch1.items():
         # sft = 20 - abs(ch1[160])
-        sft = 0
         bv = abs(bv)
         ph = abs(ph) + sft
         if bv < 70: continue
@@ -46,7 +46,6 @@ def generateHists(ch1, ch2, outfn, *args, **xargs):
 
     for bv, ph in ch2.items():
         # sft = 20 - abs(ch2[160])
-        sft = 0
         bv = abs(bv)
         ph = abs(ph) + sft
         if bv < 70: continue
@@ -105,10 +104,11 @@ def combinePlots(hch1, fit1, hph1, fixpt, suf):
     c1 = r.TCanvas("cb", "cb", 600, 400)
 
     hch1.Draw()
-    fit1.GetXaxis().SetRangeUser(50, 540)
+    # fit1.GetXaxis().SetRangeUser(50, 540)
     fit1.Draw("same")
 
     scale = 1.0 * hch1.GetBinContent(fixpt) / hph1.GetBinContent(fixpt)
+    print "scale is", scale
     hph1.Scale(scale)
     hph1.SetMarkerStyle(33)
     hph1.SetMarkerSize(1.4)
@@ -129,7 +129,7 @@ def combinePlots(hch1, fit1, hph1, fixpt, suf):
     c1.Print("combined{}.pdf".format(suf))
 
 
-def dofitPolExp(fname):
+def dofitPolExp(fname, combineSource=None):
 
     f1 = r.TFile(fname+".root")
     hch1 = f1.Get("h_ch1")
@@ -181,15 +181,16 @@ def dofitPolExp(fname):
 
     c1.Print("hpole_"+fname+".pdf")
 
-    f_sr90 = r.TFile("../sr90phfit/Sr90_response.root")
-    hph1 = f_sr90.Get("h_ph1s")
-    hph2 = f_sr90.Get("h_ph2s")
-    # print hch1.GetXaxis().FindBin(400), hch1.GetBinContent(400), hph1.GetBinContent(4)
-    # combinePlots(hch1, fit1, hph1, 500, 17, "1")
-    # combinePlots(hch2, fit2, hph2, 500, 17, "2")
+    if combineSource:
+        f_sr90 = r.TFile(combineSource)
+        hph1 = f_sr90.Get("h_ph1s")
+        hph2 = f_sr90.Get("h_ph2s")
+        # print hch1.GetXaxis().FindBin(400), hch1.GetBinContent(400), hph1.GetBinContent(4)
+        # combinePlots(hch1, fit1, hph1, 500, 17, "1")
+        # combinePlots(hch2, fit2, hph2, 500, 17, "2")
 
-    combinePlots(hch1, fit1, hph1, 500, "1")
-    # combinePlots(hch2, fit2, hph2, 300, "2")
+        combinePlots(hch1, fit1, hph1, 500, "1")
+        # combinePlots(hch2, fit2, hph2, 300, "2")
 
     return fit1, fit2
     # print fr1.GetParameter(0), fr1.GetParameter(1), fr1.GetParameter(2), fr1.GetParameter(3), fr1.GetParameter(4)
@@ -340,7 +341,7 @@ def dofitExpExpInv(fname):
 
     return fit1, fit2
 
-def doPlotExpExpInv(fname, lgf1, lgf2):
+def doPlotExpExpInv(fname, lgf1, lgf2, combineSource=None):
 
     f1 = r.TFile(fname+".root")
     hch1 = f1.Get("h_ch1")
@@ -372,6 +373,14 @@ def doPlotExpExpInv(fname, lgf1, lgf2):
     leg.Draw()
 
     c1.Print("hes_"+fname+".pdf")
+
+    if combineSource:
+        f_sr90 = r.TFile(combineSource)
+        hph1 = f_sr90.Get("h_ph1s")
+        hph2 = f_sr90.Get("h_ph2s")
+
+        # combinePlots(hch1, fit1, hph1, 560, "new")
+        combinePlots(hch2, fit2, hph1, 560, "new")
 
     return fit1, fit2
 
@@ -472,17 +481,27 @@ if __name__ == "__main__":
     FS4_BVs_4VnoFilter = [   0,   30,   40,   50,   60,   70,   80,  100,  120,  150,  200,  250,  300,  350,  400,  450,  500,  550,  570,  590,  610,  630,  640,  650,  660,  670,  680,  690,  700,  ]
     FS4_P2P_4VnoFilter = [ 7.5,  7.6,  9.3, 10.4, 11.0, 11.6, 12.2, 12.5, 13.0, 13.4, 14.3, 15.3, 16.5, 18.3, 20.6, 23.7, 28.0, 35.2, 39.4, 44.7, 52.1, 62.4, 69.5, 77.8, 89.3,  105,  127,  165,  233,  ]
 
-    BVlist = FS4_BVs_4VnoFilter
-    ch1_PHlist = FS4_P2P_4VnoFilter
+    FS4_BVs_6VnoFilter = [   500,  560,  600,  620,  640,  660,   680,  ]
+    FS4_P2P_6VnoFilter = [  27.0, 37.2, 48.5, 57.6, 71.8, 94.1, 134.4,  ]
+    drs_P2P_6VnoFilter = [  35.0, 45.3, 56.8, 65.6, 80.3,  103,   147,  ]
+
+    BVlist = FS4_BVs_6VnoFilter
+    ch1_PHlist = FS4_P2P_6VnoFilter
+    ch2_PHlist = drs_P2P_6VnoFilter
     ch1 = {}
     ch2 = {}
     for i in range(0, len(BVlist)):
         ch1[BVlist[i]] = ch1_PHlist[i]
+        ch2[BVlist[i]] = ch2_PHlist[i]
 
     fn = "fnalsensor4"
-    generateHists(ch1, ch2, fn)
+    generateHists(ch1, ch2, fn, sft=-2.5)
     dofitPolExp(fn)
     # dofitExpExp(fn)
     # dofitPowExp(fn)
     lgf1, lgf2 = dofitExpExpInv(fn)
     doPlotExpExpInv(fn, lgf1, lgf2)
+
+    # Do combinePlots
+    dofitPolExp(fn, combineSource="../sr90phfit/FS4_Sr90response.root")
+    doPlotExpExpInv(fn, lgf1, lgf2, combineSource="../sr90phfit/FS4_Sr90response.root")

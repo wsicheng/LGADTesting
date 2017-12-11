@@ -11,11 +11,13 @@ from array import array
 def generateHists(infn, chnum=0, phcut_max=350, phcut_min=0, *args, **kwargs):
     ''' ch1, ch2 will be lists as of pulse heights '''
 
-    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 200)
-    hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
+    xmax = 200 if phcut_max < 200 else phcut_max + 50
 
-    hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 200)
-    hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
+    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, xmax)
+    hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
+
+    hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, xmax)
+    hpa2 = r.TH1F("h_pa2", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 2)
 
     lines = open("data/"+infn+".ant").readlines()
     for line in lines:
@@ -398,11 +400,20 @@ if __name__ == "__main__":
     '''
     Set of points taken with the last fnal sensor (FS4), with guard ring, mounted on a carrier board.
     '''
-    ch1_lrunlist5 = ["Run658","Run659","Run660","Run661","Run661",]
+    ch1_lrunlist5 = ["Run658","Run659","Run660","Run661","Run662",]
     ch1_lrBVlist5 = [    400 ,    500 ,    540 ,    580 ,    680 ,]
-    ch1_lrdivlst5 = [     20 ,     20 ,     20 ,     20 ,    100 ,]
+    ch1_lrdivlst5 = [     20 ,     20 ,     20 ,     20 ,     50 ,]
     ch1_frminlst5 = [     14 ,     14 ,     14 ,     14 ,     50 ,]
-    ch1_frmaxlst5 = [    150 ,    150 ,    150 ,    150 ,    750 ,]
+    ch1_frmaxlst5 = [    150 ,    150 ,    150 ,    150 ,    600 ,]
+
+    '''
+    Retake of set of points taken with the last fnal sensor (FS4), with guard ring, mounted on a carrier board.
+    '''
+    ch1_lrunlist5 = ["Run726","Run727","Run728","Run729","Run730","Run731","Run732",]
+    ch1_lrBVlist5 = [    620 ,    640 ,    660 ,    680 ,    560 ,    500 ,    470 ,]
+    ch1_lrdivlst5 = [     50 ,     50 ,     50 ,     50 ,     50 ,     50 ,     50 ,]
+    ch1_frminlst5 = [     20 ,     20 ,     20 ,     20 ,     15 ,     15 ,     10 ,]
+    ch1_frmaxlst5 = [    350 ,    350 ,    350 ,    350 ,    150 ,    150 ,    150 ,]
 
     # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
     # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
@@ -410,11 +421,11 @@ if __name__ == "__main__":
     # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
     # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    ch1_lrunlist = ["Run659",]
-    ch1_lrBVlist = [    500 ,]
-    ch1_lrdivlst = [     20 ,]
-    ch1_frminlst = [     14 ,]
-    ch1_frmaxlst = [    150 ,]
+    ch1_lrunlist = ch1_lrunlist5
+    ch1_lrBVlist = ch1_lrBVlist5
+    ch1_lrdivlst = ch1_lrdivlst5
+    ch1_frminlst = ch1_frminlst5
+    ch1_frmaxlst = ch1_frmaxlst5
 
     ch2_lrunlist = ch2_lrunlist1
     ch2_lrBVlist = ch2_lrBVlist1
@@ -481,7 +492,7 @@ if __name__ == "__main__":
     #     hch1.SetBinError  (bv, e)
     #     hlog1.SetBinContent(bv, math.log(v))
     #     hlog1.SetBinError  (bv, math.log(v)*e/v)
-    #     v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+    #     v, e = dofitLandGaus(hph2, '_pp{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
     #     hch2.SetBinContent(bv, v)
     #     hch2.SetBinError  (bv, e)
     #     hlog2.SetBinContent(bv, math.log(v))
@@ -528,9 +539,9 @@ if __name__ == "__main__":
     hlog2.Write()
     f.Close()
 
-    # dofitExpExp(hch1)
-    # dofitPolExp(hch1)
-    # dofitExpExp(hlog1)
-    # dofitExpExpInv(hlog1)
-    # dofitExpExpInvSft(hlog1)
-    # dofitLine(hlog1)
+    dofitExpExp(hch1)
+    dofitPolExp(hch1)
+    dofitExpExp(hlog1)
+    dofitExpExpInv(hlog1)
+    dofitExpExpInvSft(hlog1)
+    dofitLine(hlog1)
