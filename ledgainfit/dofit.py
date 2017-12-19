@@ -12,6 +12,8 @@ def generateHists(ch1, ch2, outfn, *args, **kwargs):
     xmax = max(ch1.keys()) + 30
     # xmax = 720
     sft = kwargs.get("sft", 0)
+    mincut = kwargs.get("mincut", 70)
+    logmincut = kwargs.get("logmin", 170)
 
     hch1 = r.TH1F("h_ch1", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
     hch2 = r.TH1F("h_ch2", "Pulse height vs bias voltage;Bias voltage [V]; Pulse hieght [mV]", xmax, 0, xmax)
@@ -29,16 +31,15 @@ def generateHists(ch1, ch2, outfn, *args, **kwargs):
         # sft = 20 - abs(ch1[160])
         bv = abs(bv)
         ph = abs(ph) + sft
-        if bv < 70: continue
+        if bv < mincut: continue
         hch1.SetBinContent(bv, ph)
         hch1.SetBinError(bv, 0.2)
-        # bv = bv-40
-        # lph = math.log(ph+ch1[-40])
+        if bv <= 0: continue
         lph = math.log(ph)
         lbv = math.log(bv)
         hlla1.Fill(lbv, lph)
 
-        if bv < 170: continue
+        if bv < logmincut: continue
         hlog1.SetBinContent(bv, lph)
         hlog1.SetBinError(bv, 0.2*lph/ph)
         if bv < 200: continue
@@ -48,16 +49,15 @@ def generateHists(ch1, ch2, outfn, *args, **kwargs):
         # sft = 20 - abs(ch2[160])
         bv = abs(bv)
         ph = abs(ph) + sft
-        if bv < 70: continue
+        if bv < mincut: continue
         hch2.SetBinContent(bv, ph)
         hch2.SetBinError(bv, 0.2)
-        # bv = bv-40
-        # lph = math.log(ph+ch2[-40])
+        if bv <= 0: continue
         lph = math.log(ph)
         lbv = math.log(bv)
         hlla2.Fill(lbv, lph)
 
-        if bv < 170: continue
+        if bv < logmincut: continue
         hlog2.SetBinContent(bv, lph)
         hlog2.SetBinError(bv, 0.2*lph/ph)
         if bv < 200: continue
@@ -118,7 +118,7 @@ def combinePlots(hch1, fit1, hph1, fixpt, suf):
     leg.AddEntry(hch1, "LED Source")
     leg.AddEntry(hph1, "Sr90 Source")
     leg.Draw()
-    scaletxt = r.TLatex(0.2, 0.67, "Sr90 scaled by  %2.1f" % scale)
+    scaletxt = r.TLatex(0.2, 0.67, "Sr90 scaled by  %2.2f" % scale)
     scaletxt.SetNDC()
     scaletxt.SetTextAlign(11)
     scaletxt.SetTextFont(61)
@@ -175,8 +175,10 @@ def dofitPolExp(fname, combineSource=None):
     leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
     # leg.AddEntry(fit1, "T = 20 #circC")
     # leg.AddEntry(fit2, "T = 11 #circC")
-    leg.AddEntry(fit1, "CH1 \"gain\"")
-    leg.AddEntry(fit2, "CH2 \"no gain\"")
+    # leg.AddEntry(fit1, "CH1 \"gain\"")
+    # leg.AddEntry(fit2, "CH2 \"no gain\"")
+    leg.AddEntry(fit1, "CH1 U3B")
+    leg.AddEntry(fit2, "CH2 U3C")
     leg.Draw()
 
     c1.Print("hpole_"+fname+".pdf")
@@ -189,7 +191,7 @@ def dofitPolExp(fname, combineSource=None):
         # combinePlots(hch1, fit1, hph1, 500, 17, "1")
         # combinePlots(hch2, fit2, hph2, 500, 17, "2")
 
-        combinePlots(hch1, fit1, hph1, 500, "1")
+        combinePlots(hch1, fit1, hph1, 200, "1")
         # combinePlots(hch2, fit2, hph2, 300, "2")
 
     return fit1, fit2
@@ -299,7 +301,7 @@ def dofitExpExpInv(fname):
 
     xmax = 720
 
-    fitf = r.TF1("f4", "[0]*exp(-[1]/(x-[2])) + [3]", 150, xmax)
+    fitf = r.TF1("f4", "[0]*exp(-[1]/(x-[2])) + [3]", 50, xmax)
     fitf.SetParameter(0, 0.3)
     fitf.SetParameter(1, 0.004)
     fitf.SetParameter(2, 700)
@@ -333,8 +335,8 @@ def dofitExpExpInv(fname):
     fit2.Draw("same")
 
     leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
-    leg.AddEntry(fit1, "CH1 \"gain\"")
-    leg.AddEntry(fit2, "CH2 \"no gain\"")
+    leg.AddEntry(fit1, "CH1 U3B")
+    leg.AddEntry(fit2, "CH2 U3C")
     leg.Draw()
 
     c1.Print("hei_"+fname+".pdf")
@@ -350,9 +352,9 @@ def doPlotExpExpInv(fname, lgf1, lgf2, combineSource=None):
     xmax = 720
 
     fit1 = r.TF1("f8", "exp({0}*exp(-{1}/(x-{2})) + {3})".format(lgf1.GetParameter(0), lgf1.GetParameter(1),
-                                                                 lgf1.GetParameter(2), lgf1.GetParameter(3)), 150, xmax)
+                                                                 lgf1.GetParameter(2), lgf1.GetParameter(3)), 50, xmax)
     fit2 = r.TF1("f9", "exp({0}*exp(-{1}/(x-{2})) + {3})".format(lgf2.GetParameter(0), lgf2.GetParameter(1),
-                                                                 lgf2.GetParameter(2), lgf2.GetParameter(3)), 150, xmax)
+                                                                 lgf2.GetParameter(2), lgf2.GetParameter(3)), 50, xmax)
     # fr1 = hch1.GetFunction("f3")
     c1 = r.TCanvas("c8", "c8", 600, 400)
     hch1.SetMarkerSize(0.8)
@@ -368,8 +370,8 @@ def doPlotExpExpInv(fname, lgf1, lgf2, combineSource=None):
     # fit2.Draw("same")
 
     leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
-    leg.AddEntry(fit1, "FNAL S4")
-    # leg.AddEntry(fit2, "CH2 \"no gain\"")
+    leg.AddEntry(fit1, "FBK U3 s2")
+    leg.AddEntry(fit2, "FBK U3 s3")
     leg.Draw()
 
     c1.Print("hes_"+fname+".pdf")
@@ -379,8 +381,8 @@ def doPlotExpExpInv(fname, lgf1, lgf2, combineSource=None):
         hph1 = f_sr90.Get("h_ph1s")
         hph2 = f_sr90.Get("h_ph2s")
 
-        # combinePlots(hch1, fit1, hph1, 560, "new")
-        combinePlots(hch2, fit2, hph1, 560, "new")
+        combinePlots(hch1, fit1, hph1, 200, "new")
+        # combinePlots(hch2, fit2, hph1, 560, "new")
 
     return fit1, fit2
 
@@ -485,17 +487,24 @@ if __name__ == "__main__":
     FS4_P2P_6VnoFilter = [  27.0, 37.2, 48.5, 57.6, 71.8, 94.1, 134.4,  ]
     drs_P2P_6VnoFilter = [  35.0, 45.3, 56.8, 65.6, 80.3,  103,   147,  ]
 
-    BVlist = FS4_BVs_6VnoFilter
-    ch1_PHlist = FS4_P2P_6VnoFilter
-    ch2_PHlist = drs_P2P_6VnoFilter
+    '''The LED is at 4V, relatively close, both CH1 and CH2 are connected through an internal 1MOhm termination (by mistake)
+       Data is taken at Dec 16, 2017, with cable B on CH1, cable C on CH2, and cable D on CH3. sft=5.7 on CH1 and 5.9 for CH2
+    '''
+    FBK_U3B_BVs_4VnoFilter = [    0 ,   10 ,   30 ,   40 ,   50 ,   70 ,  100 ,  150 ,  180 ,  200 ,  210 ,  220 ,  230 ,  240 ,  250 ,]
+    FBK_U3B_P2P_4VnoFilter = [ 13.0 , 13.1 , 13.1 , 19.1 , 21.8 , 22.3 , 24.3 , 29.3 , 35.4 , 42.0 , 46.7 , 53.1 , 62.6 , 76.0 , 97.0 ,]
+    FBK_U3C_P2P_4VnoFilter = [ 11.6 , 11.9 , 16.5 , 18.2 , 18.6 , 19.2 , 20.1 , 21.8 , 23.3 , 24.4 , 25.0 , 25.7 , 26.5 , 27.1 , 28.0 ,]
+
+    BVlist = FBK_U3B_BVs_4VnoFilter
+    ch1_PHlist = FBK_U3B_P2P_4VnoFilter
+    ch2_PHlist = FBK_U3C_P2P_4VnoFilter
     ch1 = {}
     ch2 = {}
     for i in range(0, len(BVlist)):
         ch1[BVlist[i]] = ch1_PHlist[i]
         ch2[BVlist[i]] = ch2_PHlist[i]
 
-    fn = "fnalsensor4"
-    generateHists(ch1, ch2, fn, sft=-2.5)
+    fn = "fbk_u3"
+    generateHists(ch1, ch2, fn, sft=0, mincut=0)
     dofitPolExp(fn)
     # dofitExpExp(fn)
     # dofitPowExp(fn)
@@ -503,5 +512,5 @@ if __name__ == "__main__":
     doPlotExpExpInv(fn, lgf1, lgf2)
 
     # Do combinePlots
-    dofitPolExp(fn, combineSource="../sr90phfit/FS4_Sr90response.root")
-    doPlotExpExpInv(fn, lgf1, lgf2, combineSource="../sr90phfit/FS4_Sr90response.root")
+    dofitPolExp(fn, combineSource="../sr90phfit/FBKU3_Sr90response.root")
+    doPlotExpExpInv(fn, lgf1, lgf2, combineSource="../sr90phfit/FBKU3_Sr90response.root")

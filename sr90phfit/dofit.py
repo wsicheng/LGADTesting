@@ -89,7 +89,9 @@ def generateHists2(infn, phcut_max=350, phcut_min=0, chnum=0, *args, **kwargs):
 def generateHistsFromJSON(infn, chnum=1, phcut_max=350, phcut_min=0, *args, **kwargs):
     ''' ch1, ch2 will be lists as of pulse heights '''
 
-    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 300)
+    xmax = phcut_max * 1.2
+
+    hph1 = r.TH1F("h_ph1", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 50, 0, xmax)
     hpa1 = r.TH1F("h_pa1", "Pulse area distribution for Sr90;Pulse hieght [mV];Events", 50, 0, 2)
 
     # hph2 = r.TH1F("h_ph2", "Pulse height distribution for Sr90;Pulse hieght [mV];Events", 100, 0, 200)
@@ -99,13 +101,16 @@ def generateHistsFromJSON(infn, chnum=1, phcut_max=350, phcut_min=0, *args, **kw
         js = json.load(fhin)
         for line in js.values():
             ch1 = line['channels'][0]
-            if not ch1['has_peak']: continue
-            ph1 = ch1['pulse_height']
-            pa1 = ch1['pulse_area']
+            # if not ch1['has_peak']: continue
+            # ph1 = ch1['pulse_height']
+            # pa1 = ch1['pulse_area']
+            ph1 = ch1['peak_height'] # for every event, no 5*nosie requirement
+            pa1 = ph1                # just to put a number here
             if ph1 < phcut_max and ph1 > phcut_min:
                 hph1.Fill(ph1)
             hpa1.Fill(pa1)
 
+            # # Only doing one channel for now
             # ch2 = line['channels'][1]
             # if not ch2['has_peak']: continue
             # ph2 = ch2['pulse_height']
@@ -159,7 +164,7 @@ def dofitLandGaus(hph, plotname="", *args, **kwargs):
     pllo = array('d', [  0.5,    10,      1,  0.0])
     plhi = array('d', [10000,  1000, 100000,  100])
     sv   = array('d', [  1.8,    40,     50,    3])
-    
+
     fitr = langaufit(hph,fr,sv,pllo,plhi,fp,fpe);
 
     if plotname != "":
@@ -188,7 +193,7 @@ def dofitLandGaus2(hph, plotname="", *args, **kwargs):
     pllo = array('d', [  0.0, 0.001,      0,    0])
     plhi = array('d', [  100,  1000,  10000,  100])
     sv   = array('d', [ 0.01,   0.4,     40,  0.1])
-    
+
     fitr = langaufit(hph,fr,sv,pllo,plhi,fp,fpe);
 
     if plotname != "":
@@ -349,7 +354,7 @@ if __name__ == "__main__":
     coinc_Tlist = [20.6,15,]
 
     '''
-    Set of points taken by David  on Sr90, with Kansas board 
+    Set of points taken by David  on Sr90, with Kansas board
     Information can be found at http://fixels.physics.ucsb.edu/Lgbk/pub/E521.dir/E521.html
     '''
     ch1_lrunlist1 = ["Run289","Run286","Run300","Run305","Run308","Run310","Run313","Run317","Run320","Run322",]
@@ -372,8 +377,8 @@ if __name__ == "__main__":
 
 
     '''
-    Set of points taken by David during last week of October on Sr90, with Fermilab board 
-    sensor on ch1 has guard-ring and ch2 no guard-ring 
+    Set of points taken by David during last week of October on Sr90, with Fermilab board
+    sensor on ch1 has guard-ring and ch2 no guard-ring
     '''
     ch1_lrunlist3 = ["Run389","Run402","Run406","Run407","Run410","Run411",]
     ch1_lrBVlist3 = [    400 ,    500 ,    550 ,    600 ,    600 ,    650 ,]
@@ -389,7 +394,7 @@ if __name__ == "__main__":
 
 
     '''
-    Set of points taken with the broken fnal sensor, 
+    Set of points taken with the broken fnal sensor,
     '''
     ch1_lrunlist4 = ["Run436","Run431","Run432","Run433","Run434",] # "Run426",
     ch1_lrBVlist4 = [    450 ,    475 ,    500 ,    525 ,    550 ,] #     550 ,
@@ -415,17 +420,26 @@ if __name__ == "__main__":
     ch1_frminlst5 = [     20 ,     20 ,     20 ,     20 ,     15 ,     15 ,     10 ,]
     ch1_frmaxlst5 = [    350 ,    350 ,    350 ,    350 ,    150 ,    150 ,    150 ,]
 
+    '''
+    FBK sensors on FNAL board U3, sensor B at readout channel 2. Gain diode with W15-(Galium/lowC-1.04)-4Rings-01+02-34
+    '''
+    FBK_U3B_runlst = ["Run758","Run766","Run761","Run764",]
+    FBK_U3B_BVlist = [    150 ,    180 ,    200 ,    240 ,]
+    FBK_U3B_divlst = [     20 ,     20 ,     20 ,     50 ,]
+    FBK_U3B_minlst = [      8 ,      8 ,      8 ,      8 ,]
+    FBK_U3B_maxlst = [    140 ,    140 ,    140 ,    350 ,]
+
     # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
     # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
     # ch1_lrdivlst = ch1_lrdivlst1 + ch1_lrdivlst2
     # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
     # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    ch1_lrunlist = ch1_lrunlist5
-    ch1_lrBVlist = ch1_lrBVlist5
-    ch1_lrdivlst = ch1_lrdivlst5
-    ch1_frminlst = ch1_frminlst5
-    ch1_frmaxlst = ch1_frmaxlst5
+    ch1_lrunlist = FBK_U3B_runlst
+    ch1_lrBVlist = FBK_U3B_BVlist
+    ch1_lrdivlst = FBK_U3B_divlst
+    ch1_frminlst = FBK_U3B_minlst
+    ch1_frmaxlst = FBK_U3B_maxlst
 
     ch2_lrunlist = ch2_lrunlist1
     ch2_lrBVlist = ch2_lrBVlist1
@@ -462,17 +476,17 @@ if __name__ == "__main__":
         # hch2.SetBinContent(ibin, v)
         # hch2.SetBinError  (ibin, e)
 
-    for i, fn in enumerate(ch2_lrunlist):
-        bv = ch2_lrBVlist[i]
-        frmin = ch2_frminlst[i]
-        frmax = ch2_frmaxlst[i]
+    # for i, fn in enumerate(ch2_lrunlist):
+    #     bv = ch2_lrBVlist[i]
+    #     frmin = ch2_frminlst[i]
+    #     frmax = ch2_frmaxlst[i]
 
-        hph2, hpa2 = generateHists(fn, 2, frmax, frmin)
-        v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
-        hch2.SetBinContent(bv, v)
-        hch2.SetBinError  (bv, e)
-        hlog2.SetBinContent(bv, math.log(v))
-        hlog2.SetBinError  (bv, math.log(v)*e/v)
+    #     hph2, hpa2 = generateHists(fn, 2, frmax, frmin)
+    #     v, e = dofitLandGaus(hph2, '_{}_ph2_{}'.format(fn, bv), frmin=frmin, frmax=frmax)
+    #     hch2.SetBinContent(bv, v)
+    #     hch2.SetBinError  (bv, e)
+    #     hlog2.SetBinContent(bv, math.log(v))
+    #     hlog2.SetBinError  (bv, math.log(v)*e/v)
 
 
     drs_flist = [  "Run1",  "Run2",]
@@ -498,11 +512,23 @@ if __name__ == "__main__":
     #     hlog2.SetBinContent(bv, math.log(v))
     #     hlog2.SetBinError  (bv, math.log(v)*e/v)
 
-    drs_jsonlist = ["FS4_BV450","FS4_BV500","FS4_BV550","FS4_BV600", ]
-    drs_jsBVlist = [       450 ,       500 ,       550 ,       600 , ]
-    drs_jsdivlst = [        50 ,        50 ,        50 ,        50 , ]
-    drs_jsminlst = [        14 ,        14 ,        14 ,        14 , ]
-    drs_jsmaxlst = [       200 ,       200 ,       200 ,       200 , ]
+    # drs_jsonlist = ["FS4_BV450","FS4_BV500","FS4_BV550","FS4_BV600", ]
+    # drs_jsBVlist = [       450 ,       500 ,       550 ,       600 , ]
+    # drs_jsdivlst = [        50 ,        50 ,        50 ,        50 , ]
+    # drs_jsminlst = [        14 ,        14 ,        14 ,        14 , ]
+    # drs_jsmaxlst = [       200 ,       200 ,       200 ,       200 , ]
+
+    # drs_jsonlist = ["FBK_U2A_BV100","FBK_U2B_BV100","FBK_U2C_BV100","FBK_U2D_BV100","FBK_U2A_BV150", ]
+    # drs_jsBVlist = [           100 ,           101 ,           102 ,           103 ,           150 , ]
+    # drs_jsdivlst = [            10 ,            10 ,            10 ,            10 ,            10 , ]
+    # drs_jsminlst = [            10 ,            10 ,            10 ,            10 ,            10 , ]
+    # drs_jsmaxlst = [           200 ,           200 ,           200 ,           200 ,           200 , ]
+
+    # drs_jsonlist = ["KB2_BV150",]
+    # drs_jsBVlist = [       150 ,]
+    # drs_jsdivlst = [        10 ,]
+    # drs_jsminlst = [         0 ,]
+    # drs_jsmaxlst = [        80 ,]
 
     # for i, fn in enumerate(drs_jsonlist):
     #     bv = drs_jsBVlist[i]
@@ -532,7 +558,7 @@ if __name__ == "__main__":
     c1.Print("hch2_test.pdf")
 
     # f = r.TFile("drsData_Sr90response.root","RECREATE")
-    f = r.TFile("FS4_Sr90response.root","RECREATE")
+    f = r.TFile("FBKU3_Sr90response.root","RECREATE")
     hch1.Write()
     hch2.Write()
     hlog1.Write()
