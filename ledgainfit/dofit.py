@@ -365,13 +365,15 @@ def doPlotExpExpInv(fname, lgf1, lgf2, combineSource=None):
 
     hch1.GetYaxis().SetRangeUser(0, 200)
     hch1.Draw()
+    hch2.SetMarkerStyle(27)
+    hch2.SetMarkerSize(1.5)
     hch2.Draw("same")
     fit1.Draw("same")
     # fit2.Draw("same")
 
-    leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
-    leg.AddEntry(fit1, "FBK U3 s2")
-    leg.AddEntry(fit2, "FBK U3 s3")
+    leg = r.TLegend(0.2, 0.68, 0.37, 0.82)
+    leg.AddEntry(fit1, "FBK U3C 13C")
+    leg.AddEntry(fit2, "FBK U2A 13C")
     leg.Draw()
 
     c1.Print("hes_"+fname+".pdf")
@@ -477,8 +479,9 @@ if __name__ == "__main__":
         # ch2[BVlist[i]] = ch1_PH_6VnoFilter[i]
 
 
-    ''' LED scan on the last Fermilab sensor, lableled below as (F)ermilab(S)ensor(4). The sensor is (currently) singly mounted on a carrier board and connected to CH1.
-        Data taken on Nov 30, 2017, morning & afternoon, with interuption between 670 V to do IV scan.
+    '''
+    LED scan on the last Fermilab sensor, lableled below as (F)ermilab(S)ensor(4). The sensor is (currently) singly mounted on a carrier board and connected to CH1.
+    Data taken on Nov 30, 2017, morning & afternoon, with interuption between 670 V to do IV scan.
     '''
     FS4_BVs_4VnoFilter = [   0,   30,   40,   50,   60,   70,   80,  100,  120,  150,  200,  250,  300,  350,  400,  450,  500,  550,  570,  590,  610,  630,  640,  650,  660,  670,  680,  690,  700,  ]
     FS4_P2P_4VnoFilter = [ 7.5,  7.6,  9.3, 10.4, 11.0, 11.6, 12.2, 12.5, 13.0, 13.4, 14.3, 15.3, 16.5, 18.3, 20.6, 23.7, 28.0, 35.2, 39.4, 44.7, 52.1, 62.4, 69.5, 77.8, 89.3,  105,  127,  165,  233,  ]
@@ -487,23 +490,56 @@ if __name__ == "__main__":
     FS4_P2P_6VnoFilter = [  27.0, 37.2, 48.5, 57.6, 71.8, 94.1, 134.4,  ]
     drs_P2P_6VnoFilter = [  35.0, 45.3, 56.8, 65.6, 80.3,  103,   147,  ]
 
-    '''The LED is at 4V, relatively close, both CH1 and CH2 are connected through an internal 1MOhm termination (by mistake)
-       Data is taken at Dec 16, 2017, with cable B on CH1, cable C on CH2, and cable D on CH3. sft=5.7 on CH1 and 5.9 for CH2
     '''
-    FBK_U3B_BVs_4VnoFilter = [    0 ,   10 ,   30 ,   40 ,   50 ,   70 ,  100 ,  150 ,  180 ,  200 ,  210 ,  220 ,  230 ,  240 ,  250 ,]
-    FBK_U3B_P2P_4VnoFilter = [ 13.0 , 13.1 , 13.1 , 19.1 , 21.8 , 22.3 , 24.3 , 29.3 , 35.4 , 42.0 , 46.7 , 53.1 , 62.6 , 76.0 , 97.0 ,]
-    FBK_U3C_P2P_4VnoFilter = [ 11.6 , 11.9 , 16.5 , 18.2 , 18.6 , 19.2 , 20.1 , 21.8 , 23.3 , 24.4 , 25.0 , 25.7 , 26.5 , 27.1 , 28.0 ,]
+    The LED is at 4V, relatively close, both CH1 and CH2 are connected through an internal 1MOhm termination (by mistake)
+    Data is taken at Dec 16, 2017, with cable B on CH1, cable C on CH2, and cable D on CH3. sft=5.7 on CH1 and 5.9 for CH2
+    '''
+    FBK_U3B_BVs = [    0,   10,   30,   40,   50,   70,  100,  150,  180,  200,  210,  220,  230,  240,  250,]
+    FBK_U3B_P2P = [ 13.0, 13.1, 13.1, 19.1, 21.8, 22.3, 24.3, 29.3, 35.4, 42.0, 46.7, 53.1, 62.6, 76.0, 97.0,]
+    FBK_U3C_P2P = [ 11.6, 11.9, 16.5, 18.2, 18.6, 19.2, 20.1, 21.8, 23.3, 24.4, 25.0, 25.7, 26.5, 27.1, 28.0,]
 
-    BVlist = FBK_U3B_BVs_4VnoFilter
-    ch1_PHlist = FBK_U3B_P2P_4VnoFilter
-    ch2_PHlist = FBK_U3C_P2P_4VnoFilter
+    '''
+    Re-take LED scan on FBK sensor on U3B with lower temperature (12.2 C), 2 with 50Ohm termination and 3 with 1MOhm termination
+    '''
+    FBK_U3B_P2P2 = [  7.8,  7.9,  7.9, 12.1, 13.4, 14.5, 16.1, 20.7, 25.9, 33.0, 38.6, 46.6, 59.8, 82.9,  126,]
+    FBK_U3B_P2P3 = [ 15.8, 15.8, 16.0, 25.2, 27.4, 29.3, 32.7, 41.9, 52.5, 66.4, 77.7, 93.9,  120,  165,  250,]
+
+    '''
+    The LED is at 4V, relatively close, with cable B on CH1, cable C on CH2, and cable D on CH3. B sensor all bonds plucked.
+    Mainly to test the gain region for sensor on C. Data is taken at Dec 20, 2017.
+    BVs = [ 250, 310,  330,  350,  360,  370,  380, 385,  388,  390,  391,]
+    Is  = [ 0.6,   1,  1.5,    2,  2.2,  3.0,  4.9, 7.6, 12.0, 17.8, 21.8,]
+    '''
+    FBK_U3C_BVs = [   0,  10,  50, 100, 200, 250,  270,  290,  300,  310,  330,  350,  360,  370,  380, 385,  388,  390,  391,]
+    FBK_U3C_P2P = [ 4.7, 4.7, 6.6, 7.0, 8.4, 9.4, 10.3, 11.6, 12.4, 13.5, 16.4, 22.3, 28.1, 39.7, 69.7, 108,  163,  231,  282,]
+
+    '''
+    The LED is at 4V, relatively close. Data is taken at Dec 12, 2017.
+    '''
+    FBK_U2A_BVs = [   0,  20,   30,   50,   70,   90,  110,  130,  150,  170,]
+    FBK_U2A_P2P = [ 5.8, 6.1, 16.3, 26.8, 29.0, 31.3, 34.2, 37.3, 40.9, 45.7,]
+
+    '''
+    The LED is at 4V, relatively close. Data is taken at Dec 20, 2017. Temperature at 13C
+    '''
+    FBK_U2A_BVs2 = [   0,  10,   30,   50,   70,   90,  100,  110,  130,  150,  170,]
+    FBK_U2A_P2P2 = [ 7.4, 7.5, 19.5, 24.7, 26.7, 29.0, 30.2, 31.5, 34.5, 37.9, 42.3,]
+
+    BVlist = FBK_U3B_BVs
+    ch1_PHlist = FBK_U3B_P2P
+    # ch2_PHlist = FBK_U3C_P2P
     ch1 = {}
     ch2 = {}
     for i in range(0, len(BVlist)):
         ch1[BVlist[i]] = ch1_PHlist[i]
-        ch2[BVlist[i]] = ch2_PHlist[i]
+        # ch2[BVlist[i]] = ch2_PHlist[i]
 
-    fn = "fbk_u3"
+    BVlist = FBK_U2A_BVs2
+    ch2_PHlist = FBK_U2A_P2P2
+    for i in range(0, len(BVlist)):
+        ch2[BVlist[i]] = ch2_PHlist[i] / 31.5 * 7.0
+
+    fn = "fbku3b_20C"
     generateHists(ch1, ch2, fn, sft=0, mincut=0)
     dofitPolExp(fn)
     # dofitExpExp(fn)

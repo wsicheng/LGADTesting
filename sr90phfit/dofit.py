@@ -212,6 +212,28 @@ def dofitLandGaus2(hph, plotname="", *args, **kwargs):
 
     return maxx, fp[3]
 
+def drawCompare(f1name, f2name):
+    f1 = r.TFile(f1name+".root")
+    hch1 = f1.Get("h_ph1s")
+    f2 = r.TFile(f2name+".root")
+    hch2 = f2.Get("h_ph1s")
+
+
+    c1 = r.TCanvas("cp", "cp", 600, 400)
+
+    hch1.GetYaxis().SetRangeUser(0, 200)
+    hch1.GetXaxis().SetRangeUser(0, 300)
+    hch1.SetMarkerColor(r.kRed-7)
+    hch1.Draw()
+    hch2.Draw("same")
+
+    leg = r.TLegend(0.2, 0.7, 0.36, 0.8)
+    leg.AddEntry(hch1, "FBK U3B 12C")
+    leg.AddEntry(hch2, "FBK U3B 20C")
+    leg.Draw()
+
+    c1.Print("compared_fbku3b.pdf")
+
 def dofitPolExp(hch1):
 
     fitf = r.TF1("f1", "([0] + [1]*x + [2]*x^2)*exp([3]*x) + [4]", 50, 700)
@@ -421,7 +443,7 @@ if __name__ == "__main__":
     ch1_frmaxlst5 = [    350 ,    350 ,    350 ,    350 ,    150 ,    150 ,    150 ,]
 
     '''
-    FBK sensors on FNAL board U3, sensor B at readout channel 2. Gain diode with W15-(Galium/lowC-1.04)-4Rings-01+02-34
+    FBK sensors on FNAL board U3, sensor B at readout channel 2. Gain diode with W15-(Galium/lowC-1.04)
     '''
     FBK_U3B_runlst = ["Run758","Run766","Run761","Run764",]
     FBK_U3B_BVlist = [    150 ,    180 ,    200 ,    240 ,]
@@ -429,17 +451,33 @@ if __name__ == "__main__":
     FBK_U3B_minlst = [      8 ,      8 ,      8 ,      8 ,]
     FBK_U3B_maxlst = [    140 ,    140 ,    140 ,    350 ,]
 
+    FBK_U3B_runlst2 = ["Run768","Run769","Run770","Run771","Run772",]
+    FBK_U3B_BVlist2 = [    150 ,    180 ,    200 ,    220 ,    240 ,]
+    FBK_U3B_divlst2 = [     20 ,     20 ,     50 ,     50 ,     50 ,]
+    FBK_U3B_minlst2 = [      8 ,      8 ,     20 ,     40 ,     40 ,]
+    FBK_U3B_maxlst2 = [    140 ,    140 ,    300 ,    350 ,    350 ,]
+
+
+    '''
+    FBK sensors on FNAL board U3, sensor C at readout channel 3. Gain diode with W8-(Boron-1.02).
+    '''
+    FBK_U3C_runlst_14C = ["Run777","Run778","Run779","Run780",]
+    FBK_U3C_BVlist_14C = [    350 ,    370 ,    380 ,    385 ,]
+    FBK_U3C_divlst_14C = [     50 ,     50 ,     50 ,     50 ,]
+    FBK_U3C_minlst_14C = [     20 ,     40 ,     50 ,     50 ,]
+    FBK_U3C_maxlst_14C = [    300 ,    350 ,    350 ,    350 ,]
+
     # ch1_lrunlist = ch1_lrunlist1 + ch1_lrunlist2
     # ch1_lrBVlist = ch1_lrBVlist1 + ch1_lrBVlist2
     # ch1_lrdivlst = ch1_lrdivlst1 + ch1_lrdivlst2
     # ch1_frminlst = ch1_frminlst1 + ch1_frminlst2
     # ch1_frmaxlst = ch1_frmaxlst1 + ch1_frmaxlst2
 
-    ch1_lrunlist = FBK_U3B_runlst
-    ch1_lrBVlist = FBK_U3B_BVlist
-    ch1_lrdivlst = FBK_U3B_divlst
-    ch1_frminlst = FBK_U3B_minlst
-    ch1_frmaxlst = FBK_U3B_maxlst
+    ch1_lrunlist = FBK_U3C_runlst_14C
+    ch1_lrBVlist = FBK_U3C_BVlist_14C
+    ch1_lrdivlst = FBK_U3C_divlst_14C
+    ch1_frminlst = FBK_U3C_minlst_14C
+    ch1_frmaxlst = FBK_U3C_maxlst_14C
 
     ch2_lrunlist = ch2_lrunlist1
     ch2_lrBVlist = ch2_lrBVlist1
@@ -558,16 +596,18 @@ if __name__ == "__main__":
     c1.Print("hch2_test.pdf")
 
     # f = r.TFile("drsData_Sr90response.root","RECREATE")
-    f = r.TFile("FBKU3_Sr90response.root","RECREATE")
+    f = r.TFile("FBKU3C_Sr90response.root","RECREATE")
     hch1.Write()
     hch2.Write()
     hlog1.Write()
     hlog2.Write()
     f.Close()
 
-    dofitExpExp(hch1)
+    # dofitExpExp(hch1)
     dofitPolExp(hch1)
     dofitExpExp(hlog1)
     dofitExpExpInv(hlog1)
     dofitExpExpInvSft(hlog1)
-    dofitLine(hlog1)
+    # dofitLine(hlog1)
+
+    # drawCompare("FBKU3B_Sr90response", "FBKU3_Sr90response")
