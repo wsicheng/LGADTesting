@@ -108,6 +108,8 @@ int testEfficiency()
   ch->SetBranchAddress("base", &base);
   ch->SetBranchAddress("integral", &integral);
   ch->SetBranchAddress("gauspeak", &gauspeak);
+  ch->SetBranchAddress("xSlope", &xSlope);
+  ch->SetBranchAddress("ySlope", &ySlope);
   ch->SetBranchAddress("x1", &x1);
   ch->SetBranchAddress("x2", &x2);
   ch->SetBranchAddress("y1", &y1);
@@ -140,28 +142,80 @@ int testEfficiency()
     plot1d("h_amp[10]", amp[10], hvec, "amp[10] [mV]", 100, 0, 0.1);
     plot1d("h_amp[13]", amp[13], hvec, "amp[13] [mV]", 100, 0, 0.1);
     plot1d("h_amp[14]", amp[14], hvec, "amp[14] [mV]", 100, 0, 0.1);
-    
-    if (amp[10] > 0.01)
-      plot2d("h2d_pix[10]", x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+
+    plot1d("h_xSlope_all", xSlope, hvec, "xSlope", 100, -0.0006, 0.0004);
+    plot1d("h_ySlope_all", ySlope, hvec, "ySlope", 100, -0.0006, 0.0004);
+    if (fabs(xSlope+0.00016) > 0.0003 || fabs(ySlope+0.00011) > 0.0003) continue;
 
     int exptbin0 = gauspeak[0] * 5.12;
     int exptbin_lo = exptbin0 - 69 - 30;
     int exptbin_hi = exptbin0 - 69 + 30;
 
-    if (amp[10] < 0.002 && gpocnt < 15) {
-      short* chptr = channel[10];  // ptr to channel
+    bool inarea10 = (x1>19800 && x1<21300 && y1>22900 && y1<24600);
+    bool intrga10 = (x1>19600 && x1<21000 && y1>22700 && y1<24600);
+
+    bool inarea13 = (x1>17600 && x1<19200 && y1>22800 && y1<24500);
+    bool intrga13 = (x2>17400 && x2<19100 && y2>22500 && y2<24500);
+
+    if (amp[10] > 0.008)
+      plot2d("h2d_pix[10]", x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+
+    if (inarea10) {
+      int idx = 10;
+      short* chptr = channel[idx];  // ptr to channel
+      plot1d(Form("h_amp[%d]", idx), amp[idx], hvec, ";amp [mV]", 100, 0, 0.05);
+      plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+      // Redo minimum finding
       short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+      float twinamp = *twinmin * (-1.0/4096);  // move to unit mV
+      float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
+      float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
       int minidx = twinmin - chptr;
-      // float twinint = std::accumulate(twinmin-20, twinmin+20, 0); // integral in the time window
-      float twinint = std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
-      float twinamp = *twinmin * (1.0/4096);
-      cout << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
-      cout <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
-      graphPulse(1024, time[0], chptr, Form("h2d_shape_%d", event), &gvec);
-      graphPulse(1024, tbins, chptr, Form("h2d_pulse_vs_tbins_%d", event), &gvec);
+
+      plot1d(Form("h_twinamp[%d]", idx), twinamp, hvec, ";amp [mV]", 100, 0, 0.05);
+      plot1d(Form("h_twinint[%d]", idx), twinint, hvec, ";integral [mV]", 100, 0, 1000);
+      plot1d(Form("h_fwinint[%d]", idx), fwinint, hvec, ";integral [mV]", 100, 0, 1000);
+
+      if (amp[10] < 0.001) {
+        plot1d(Form("h_twinamp[%d]_amp0", idx), twinamp, hvec, ";amp [mV]", 100, 0, 0.05);
+        plot1d(Form("h_twinint[%d]_amp0", idx), twinint, hvec, ";integral [mV]", 100, 0, 1000);
+        if (gpocnt < 15) {
+          cout << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
+          cout <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
+          graphPulse(1024, tbins, chptr, Form("h2d_pulse_vs_tbins_evt%d", event), &gvec);
+        }
+      }
+
+      if (amp[10] > 0.008) {
+        plot1d(Form("h_twinamp[%d]_amp8", idx), twinamp, hvec, ";amp [mV]", 100, 0, 0.05);
+        plot1d(Form("h_twinint[%d]_amp8", idx), twinint, hvec, ";integral [mV]", 100, 0, 1000);
+        if (gpocnt >= 15 && gpocnt < 20) {
+          cout << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
+          cout <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
+          graphPulse(1024, time[0], chptr, Form("h2d_pulse_vs_time_evt%d", event), &gvec);
+        }
+      }
     }
 
-    if (gpocnt == 15) break;
+    else if (inarea13) {
+      int idx = 13;
+      plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+
+      idx = 10;
+      short* chptr = channel[idx];  // ptr to channel
+      // Redo minimum finding
+      short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+      float twinamp = *twinmin * (-1.0/4096);  // move to unit mV
+      float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
+      float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+      // int minidx = twinmin - chptr;
+
+      plot1d(Form("hfake_amp[%d]", idx), amp[idx], hvec, ";amp [mV]", 100, 0, 0.05);
+      plot1d(Form("hfake_twinamp[%d]", idx), twinamp, hvec, ";amp [mV]", 100, 0, 0.05);
+      plot1d(Form("hfake_twinint[%d]", idx), twinint, hvec, ";integral [mV]", 100, 0, 1000);
+      plot1d(Form("hfake_fwinint[%d]", idx), fwinint, hvec, ";integral [mV]", 100, 0, 1000);
+
+    }
 
   }
 
