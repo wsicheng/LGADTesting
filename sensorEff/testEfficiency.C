@@ -206,7 +206,7 @@ int testEfficiency()
       }
       if ((idx == 10 || idx == 14) && (x1r>20300 && x1r<22100)) {
         plot1d(Form("hden_pixy_ch[%d]_200", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
-        plot1d(Form("hden_pixy_ch[%d]_150", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 17500, 22500);
+        plot1d(Form("hden_pixy_ch[%d]_150", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
       }
 
       chptr = channel[idx];  // ptr to channel

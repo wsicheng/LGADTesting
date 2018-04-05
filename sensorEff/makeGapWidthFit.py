@@ -48,7 +48,7 @@ def fitWidthY(fin):
     arr.SetFillColor(1);
     arr.Draw();
 
-    tex = r.TLatex(0.6, 0.8,"width = {:.1f} #mum".format(e2-e1))
+    tex = r.TLatex(0.55, 0.65,"width = {:.1f} #mum".format(e2-e1))
     tex.SetNDC();
     tex.SetTextSize(0.05);
     tex.Draw()
@@ -66,17 +66,17 @@ def fitWidthX(fin):
     h2.Draw("same")
     c1.Print("plots/hrat_xboth_ch10_ch13.pdf")
 
-    # f1 = r.TF1("f1", "[0]*TMath::Erf(([1]-x)/[2])+[3]", 19500, 20500)
     f1 = r.TF1("f1", "[0]*TMath::Erf((x-[1])/[2])+[3]", 19900, 21200)
     f1.SetParameters(0.3, 20100, 100, 0.01)
     h2.Fit(f1,'QNR')
-    f1.SetLineColor(r.kBlue)
+    f1.SetLineColor(r.kAzure)
 
     print f1.GetParameter(0), f1.GetParameter(1), f1.GetParameter(2), f1.GetParameter(3)
 
-    f2 = r.TF1("f2", "[0]*TMath::Erf(([1]-x)/[2])+[3]", 19000, 20300)
+    f2 = r.TF1("f2", "[0]*TMath::Erf(([1]-x)/[2])+[3]", 19100, 20300)
     f2.SetParameters(0.3, 20100, 100, 0.01)
     h1.Fit(f2,'QNR')
+    f2.SetLineColor(r.kMagenta)
 
     print f2.GetParameter(0), f2.GetParameter(1), f2.GetParameter(2), f2.GetParameter(3)
 
@@ -101,10 +101,11 @@ def fitWidthX(fin):
     arr.SetFillColor(1);
     arr.Draw();
 
-    tex = r.TLatex(0.24, 0.77,"width = {:.1f} #mum".format(e2-e1))
+    tex = r.TLatex(0.55, 0.65,"width = {:.1f} #mum".format(e2-e1))
     tex.SetNDC();
     tex.SetTextSize(0.05);
     tex.Draw()
+
 
     c1.Print("plots/hrat_xboth_testfit90_ch10_ch13.pdf")
 
