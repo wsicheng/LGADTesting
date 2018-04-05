@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 #include <map>
 
 #include "TH1.h"
@@ -163,6 +164,9 @@ int testEfficiency()
     plot1d("h_ySlope_all", ySlope, hvec, "ySlope", 100, -0.0006, 0.0004);
     if (fabs(xSlope+0.00016) > 0.0003 || fabs(ySlope+0.00011) > 0.0003) continue;
 
+    if (amp[10] > 0.008)
+      plot2d("h2d_pix[10]", x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+
     int exptbin0 = gauspeak[0] * 5.12;
     int exptbin_lo = exptbin0 - 69 - 30;
     int exptbin_hi = exptbin0 - 69 + 30;
@@ -173,82 +177,147 @@ int testEfficiency()
     bool inarea13 = (x1>17600 && x1<19200 && y1>22800 && y1<24500);
     bool intrga13 = (x2>17400 && x2<19100 && y2>22500 && y2<24500);
 
-    if (amp[10] > 0.008)
-      plot2d("h2d_pix[10]", x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+    float theta = -0.03;
+    float x1r = x1*cos(theta) - y1*sin(theta);
+    float y1r = x1*sin(theta) + y1*cos(theta);
 
-    if (inarea10) {
-      int idx = 10;
-      short* chptr = channel[idx];  // ptr to channel
-      plot1d(Form("h_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
-      plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
-      // Redo minimum finding
-      short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+    bool areaW6_bot2 = (x1r>18000 && x1r<22200 && y1r>22000 && y1r<24200);
+    bool areaW6_all4 = (x1r>17800 && x1r<22400 && y1r>21800 && y1r<26600);
+
+    if (!areaW6_all4) continue;
+
+    plot2d("hden2d_pix_W6all4_150", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+    plot1d("hden_xboth_150", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+    plot1d("hden_yboth_150", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+
+    plot2d("hden2d_pix_W6all4_200", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+    if (y1r>22300 && y1r<24000)
+      plot1d("hden_xboth_200", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+    if (x1r>20300 && x1r<22100)
+      plot1d("hden_yboth_200", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+
+    short* chptr;   // ptr to channel
+    short* twinmin; // ptr to min in the expected time window
+
+    for (int idx : {10, 13, 14, 7}) {
+      if ((idx == 10 || idx == 13) && (y1r>22300 && y1r<24000)) {
+        plot1d(Form("hden_pixx_ch[%d]_200", idx), x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+        plot1d(Form("hden_pixx_ch[%d]_150", idx), x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+      }
+      if ((idx == 10 || idx == 14) && (x1r>20300 && x1r<22100)) {
+        plot1d(Form("hden_pixy_ch[%d]_200", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+        plot1d(Form("hden_pixy_ch[%d]_150", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 17500, 22500);
+      }
+
+      chptr = channel[idx];  // ptr to channel
+      twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
       float twinamp = *twinmin * (-1.0/4096);  // move to unit V
       float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
       float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
       int minidx = twinmin - chptr;
 
-      plot1d(Form("h_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
-      plot1d(Form("h_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
-      plot1d(Form("h_fwinint[%d]", idx), fwinint, hvec, ";fix win integral", 120, -200, 1000);
-
-      if (amp[10] < 0.001) {
-        plot1d(Form("h_twinamp[%d]_amp0", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
-        plot1d(Form("h_twinint[%d]_amp0", idx), twinint, hvec, ";time win integral", 100, 0, 1000);
-        if (gpocnt < 15) {
-          ofile << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
-          ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
-          auto title = Form("amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
-          graphPulse(1024, tbins, chptr, title, Form("g_pulse_vs_tbins_evt%d", event), &gvec);
+      if (twinint > 200) {
+        if ((idx == 10 || idx == 13) && (y1r>22300 && y1r<24000)) {
+          plot1d(Form("hnum_pixx_ch[%d]_200", idx), x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+          plot1d("hnum_xboth_200", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
         }
+        if ((idx == 10 || idx == 14) && (x1r>20300 && x1r<22100)) {
+          plot1d(Form("hnum_pixy_ch[%d]_200", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+          plot1d("hnum_yboth_200", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+        }
+
+        plot2d("hnum2d_pix_W6all4_200", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+      }
+      if (twinint > 150) {
+        if ((idx == 10 || idx == 13) && (y1r>22300 && y1r<24000)) {
+          plot1d(Form("hnum_pixx_ch[%d]_150", idx), x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+          plot1d("hnum_xboth_150", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+        }
+        if ((idx == 10 || idx == 14) && (x1r>20300 && x1r<22100)) {
+          plot1d(Form("hnum_pixy_ch[%d]_150", idx), y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+          plot1d("hnum_yboth_150", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+        }
+
+        plot2d("hnum2d_pix_W6all4_150", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
       }
 
-      if (twinint > 100 && twinint < 200) {
-        plot1d(Form("h_twinamp[%d]_int100to200", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
-        if (gpocnt >= 15 && gpocnt < 30) {
-          ofile << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
-          ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
-          auto title = Form("amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
-          graphPulse(1024, time[0], chptr, title, Form("g_pulse_vs_time_evt%d", event), &gvec);
-        }
-      }
     }
 
-    else if (inarea13) {
-      int idx = 13;
-      plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
-      short* absmin = std::min_element(channel[idx]+100, channel[idx]+900); // ptr to min in the expected time window
+    if (false) {
+      if (inarea10) {
+        int idx = 10;
+        short* chptr = channel[idx];  // ptr to channel
+        // Redo minimum finding
+        short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+        float twinamp = *twinmin * (-1.0/4096);  // move to unit V
+        float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
+        float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+        int minidx = twinmin - chptr;
 
-      if (*absmin > -0.006*4096) continue;
+        plot1d(Form("h_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
+        plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
 
-      idx = 10;
-      short* chptr = channel[idx];  // ptr to channel
-      // Redo minimum finding
-      short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
-      float twinamp = *twinmin * (-1.0/4096);  // move to unit mV
-      float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
-      float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
-      int minidx = twinmin - chptr;
+        plot1d(Form("h_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+        plot1d(Form("h_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
+        plot1d(Form("h_fwinint[%d]", idx), fwinint, hvec, ";fix win integral", 120, -200, 1000);
 
-      plot1d(Form("hfake_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
-      plot1d(Form("hfake_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
-      plot1d(Form("hfake_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
-      plot1d(Form("hfake_fwinint[%d]", idx), fwinint, hvec, ";fix win integral", 120, -200, 1000);
+        if (amp[10] < 0.001) {
+          plot1d(Form("h_twinamp[%d]_amp0", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+          plot1d(Form("h_twinint[%d]_amp0", idx), twinint, hvec, ";time win integral", 100, 0, 1000);
+          if (gpocnt < 15) {
+            ofile << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
+            ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
+            auto title = Form("amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
+            graphPulse(1024, tbins, chptr, title, Form("g_pulse_vs_tbins_evt%d", event), &gvec);
+          }
+        }
 
-      if (twinint > 100) {
-        plot1d(Form("hfake_twinamp[%d]_int100", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
-        plot1d(Form("hfake_fwinint[%d]_int100", idx), fwinint, hvec, ";fix win integral", 100, 0, 1000);
-        if (gpocnt >= 40 && gpocnt < 50) {
+        if (twinint > 100 && twinint < 200) {
+          plot1d(Form("h_twinamp[%d]_int100to200", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+          if (gpocnt >= 15 && gpocnt < 30) {
+            ofile << __LINE__ << ": " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
+            ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
+            auto title = Form("amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
+            graphPulse(1024, time[0], chptr, title, Form("g_pulse_vs_time_evt%d", event), &gvec);
+          }
+        }
+      }
+      else if (inarea13) {
+        int idx = 13;
+        plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
+        short* absmin = std::min_element(channel[idx]+100, channel[idx]+900); // ptr to min in the expected time window
+
+        if (*absmin > -0.006*4096) continue;
+
+        idx = 10;
+        short* chptr = channel[idx];  // ptr to channel
+        // Redo minimum finding
+        short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+        float twinamp = *twinmin * (-1.0/4096);  // move to unit mV
+        float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
+        float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+        int minidx = twinmin - chptr;
+
+        plot1d(Form("hfake_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
+        plot1d(Form("hfake_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+        plot1d(Form("hfake_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
+        plot1d(Form("hfake_fwinint[%d]", idx), fwinint, hvec, ";fix win integral", 120, -200, 1000);
+
+        if (twinint > 100) {
+          plot1d(Form("hfake_twinamp[%d]_int100", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+          plot1d(Form("hfake_fwinint[%d]_int100", idx), fwinint, hvec, ";fix win integral", 100, 0, 1000);
+          if (gpocnt >= 40 && gpocnt < 50) {
+            ofile << __LINE__ << ": fake " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
+            ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
+            auto title = Form("fake: amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
+            graphPulse(1024, tbins, chptr, title, Form("gfake_pulse_vs_tbins_evt%d", event), &gvec);
+          }
+        } else if (gpocnt >= 30 && gpocnt < 40) {
           ofile << __LINE__ << ": fake " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
           ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
           auto title = Form("fake: amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
-          graphPulse(1024, tbins, chptr, title, Form("gfake_pulse_vs_tbins_evt%d", event), &gvec);
+          graphPulse(1024, time[0], chptr, title, Form("gfake_pulse_vs_time_evt%d", event), &gvec);
         }
-      } else if (gpocnt >= 30 && gpocnt < 40) {
-        ofile << __LINE__ << ": fake " << ++gpocnt << ": event = " << event << ", base = " << base[10] << ", integral = " << integral[10] << ", xmin= " << xmin[10];
-        ofile <<  "   :  twinint= " << twinint << ", twinamp = " << twinamp << ", minidx = " << minidx << ", tdiff = " << exptbin0 - minidx << endl;
-        auto title = Form("fake: amp=%.3f, xmin=%.0f | minidx=%d, twinamp=%.4f, twinint=%.0f", amp[idx], xmin[idx], minidx, twinamp, twinint);
-        graphPulse(1024, time[0], chptr, title, Form("gfake_pulse_vs_time_evt%d", event), &gvec);
       }
     }
 
@@ -263,25 +332,33 @@ int testEfficiency()
     if (of > 0) h.second->SetBinContent(nbin, h.second->GetBinContent(nbin) + of);
     h.second->SetLineWidth(2);
     h.second->Write();
+
+    if (h.first.find("hnum") == 0) {
+      string hname = h.first;
+      hname.erase(0, 4);
+      TH1F* h_ratio = (TH1F*) h.second->Clone(("ratio"+hname).c_str());
+      h_ratio->Divide(h_ratio, hvec.at("hden"+hname), 1, 1, "B");
+      h_ratio->Write();
+    }
   }
   for (auto& g : gvec) {
     g.second->Write();
   }
 
-  // Print out:
-  ofile << Form("Efficiency for ch10 after int > 200: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(20, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  ofile << Form("Fake rate for ch10 after int > 200: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(20, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
-  ofile << Form("Efficiency for ch10 after int > 150: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(15, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  ofile << Form("Fake rate for ch10 after int > 150: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(15, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
-  ofile << Form("Efficiency for ch10 after int > 100: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(10, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  ofile << Form("Fake rate for ch10 after int > 100: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(10, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // // Print out:
+  // ofile << Form("Efficiency for ch10 after int > 200: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(20, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // ofile << Form("Fake rate for ch10 after int > 200: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(20, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // ofile << Form("Efficiency for ch10 after int > 150: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(15, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // ofile << Form("Fake rate for ch10 after int > 150: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(15, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // ofile << Form("Efficiency for ch10 after int > 100: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(10, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // ofile << Form("Fake rate for ch10 after int > 100: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(10, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
 
-  cout << Form("Efficiency for ch10 after int > 200: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(20, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  cout << Form("Fake rate for ch10 after int > 200: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(20, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
-  cout << Form("Efficiency for ch10 after int > 150: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(15, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  cout << Form("Fake rate for ch10 after int > 150: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(15, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
-  cout << Form("Efficiency for ch10 after int > 100: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(10, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
-  cout << Form("Fake rate for ch10 after int > 100: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(10, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // cout << Form("Efficiency for ch10 after int > 200: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(20, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // cout << Form("Fake rate for ch10 after int > 200: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(20, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // cout << Form("Efficiency for ch10 after int > 150: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(15, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // cout << Form("Fake rate for ch10 after int > 150: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(15, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
+  // cout << Form("Efficiency for ch10 after int > 100: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(10, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
+  // cout << Form("Fake rate for ch10 after int > 100: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(10, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
 
   return 0;
 }
