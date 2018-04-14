@@ -168,33 +168,44 @@ int testEfficiency()
       plot2d("h2d_pix[10]", x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
 
     int exptbin0 = gauspeak[0] * 5.12;
-    int exptbin_lo = exptbin0 - 69 - 30;
-    int exptbin_hi = exptbin0 - 69 + 30;
+    int exptbin[16];
+    exptbin[10] = exptbin0 - 69;
+    exptbin[13] = exptbin0 - 47;
+    exptbin[14] = exptbin0 - 50;
+    exptbin[7]  = exptbin0 - 49;
 
-    bool inarea10 = (x1>19800 && x1<21300 && y1>22900 && y1<24600);
+    // bool inarea10 = (x1>19800 && x1<21300 && y1>22900 && y1<24600);
     bool intrga10 = (x1>19600 && x1<21000 && y1>22700 && y1<24600);
 
-    bool inarea13 = (x1>17600 && x1<19200 && y1>22800 && y1<24500);
+    // bool inarea13 = (x1>17600 && x1<19200 && y1>22800 && y1<24500);
     bool intrga13 = (x2>17400 && x2<19100 && y2>22500 && y2<24500);
 
-    float theta = -0.03;
+    float theta = -0.0295;
     float x1r = x1*cos(theta) - y1*sin(theta);
     float y1r = x1*sin(theta) + y1*cos(theta);
 
     bool areaW6_bot2 = (x1r>18000 && x1r<22200 && y1r>22000 && y1r<24200);
-    bool areaW6_all4 = (x1r>17800 && x1r<22400 && y1r>21800 && y1r<26600);
+    bool areaW6_all4 = (x1r>17800 && x1r<22400 && y1r>21800 && y1r<26600)
+;
+    bool inarea[16];
+    inarea[10] = (x1r>20400 && x1r<22000 && y1r>22400 && y1r<24000);
+    inarea[13] = (x1r>18300 && x1r<19900 && y1r>22400 && y1r<24000);
+    inarea[7]  = (x1r>18300 && x1r<19900 && y1r>24400 && y1r<26000);
+    inarea[14] = (x1r>20400 && x1r<22000 && y1r>24400 && y1r<26000);
 
     if (!areaW6_all4) continue;
 
     plot2d("hden2d_pix_W6all4_150", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
-    plot1d("hden_xboth_150", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
-    plot1d("hden_yboth_150", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
-
     plot2d("hden2d_pix_W6all4_200", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
-    if (y1r>22300 && y1r<24000)
+
+    if (y1r>22300 && y1r<24000) {
       plot1d("hden_xboth_200", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
-    if (x1r>20300 && x1r<22100)
+      plot1d("hden_xboth_150", x1r, hvec, ";x^#prime(rotated) [#mum]", 200, 17500, 22500);
+    }
+    if (x1r>20300 && x1r<22100) {
       plot1d("hden_yboth_200", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+      plot1d("hden_yboth_150", y1r, hvec, ";y^#prime(rotated) [#mum]", 200, 21500, 26500);
+    }
 
     short* chptr;   // ptr to channel
     short* twinmin; // ptr to min in the expected time window
@@ -210,11 +221,22 @@ int testEfficiency()
       }
 
       chptr = channel[idx];  // ptr to channel
-      twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+      twinmin = std::min_element(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30); // ptr to min in the expected time window
+
       float twinamp = *twinmin * (-1.0/4096);  // move to unit V
       float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
-      float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+      float fwinint = -1.0 * std::accumulate(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30, 0); // integral in the time window
       int minidx = twinmin - chptr;
+
+      if (inarea[idx]) {
+        plot1d(Form("h_minidx[%d]", idx), minidx, hvec, "; minidx", 125, 400, 650);
+        plot1d(Form("h_timedist[%d]", idx), (exptbin0 - minidx), hvec, "; minidx", 80, 20, 100);
+        if (gpocnt < 30 && abs(minidx - exptbin[idx]) > 10) {
+          auto title = Form("idx=%d, tdist=%d, xmin=%.0f, minidx=%d, twinamp=%.4f, twinint=%.0f", idx, (exptbin0 - minidx), xmin[idx], minidx, twinamp, twinint);
+          graphPulse(1024, tbins, chptr, title, Form("g_pulse[%d]_vs_tbins_evt%d", idx, event), &gvec);
+          ++gpocnt;
+        }
+      }
 
       if (twinint > 200) {
         if ((idx == 10 || idx == 13) && (y1r>22300 && y1r<24000)) {
@@ -241,17 +263,49 @@ int testEfficiency()
         plot2d("hnum2d_pix_W6all4_150", x1r, y1r, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
       }
 
+      int oppidx[16];
+      oppidx[10] = 7; oppidx[7] = 10; oppidx[13] = 14; oppidx[14] = 13; 
+
+      if (inarea[idx]) { 
+        plot1d(Form("h_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+        plot1d(Form("h_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
+      }
+      else if (inarea[oppidx[idx]] && amp[oppidx[idx]] > 0.006) {
+        plot1d(Form("hfake_twinamp[%d]", idx), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+        plot1d(Form("hfake_twinint[%d]", idx), twinint, hvec, ";time win integral", 120, -200, 1000);
+      }
+
+      auto plotSlice = [&](int min, int max) {
+        for (int x = min+400; x <= max; x += 400) {
+          if (x1r < x) {
+            plot1d(Form("h_twinint[%d]_slice[%d]", idx, x), twinint, hvec, ";time win integral", 120, -200, 1000);
+            plot1d(Form("h_twinamp[%d]_slice[%d]", idx, x), twinamp, hvec, ";amp [V]", 100, 0, 0.05);
+            break;
+          }
+        }
+      };
+
+      // bottom 2
+      if (inarea[idx] && (idx == 13 || idx == 7))
+        plotSlice(18300, 19900);
+      else if (inarea[idx] && (idx == 10 || idx == 14))
+        plotSlice(20400, 22000);
+      if (inarea[idx] && (idx == 13 || idx == 7))
+        plotSlice(18300, 19900);
+      else if (inarea[idx] && (idx == 10 || idx == 14))
+        plotSlice(20400, 22000);
+
     }
 
     if (false) {
-      if (inarea10) {
+      if (inarea[10]) {
         int idx = 10;
         short* chptr = channel[idx];  // ptr to channel
         // Redo minimum finding
-        short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+        short* twinmin = std::min_element(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30); // ptr to min in the expected time window
         float twinamp = *twinmin * (-1.0/4096);  // move to unit V
         float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
-        float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+        float fwinint = -1.0 * std::accumulate(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30, 0); // integral in the time window
         int minidx = twinmin - chptr;
 
         plot1d(Form("h_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
@@ -282,7 +336,7 @@ int testEfficiency()
           }
         }
       }
-      else if (inarea13) {
+      else if (inarea[13]) {
         int idx = 13;
         plot2d(Form("h2d_area%d", idx), x1, y1, hvec, ";x1[#mum];y1[#mum]", 120, 17000, 23000, 120, 21000, 27000);
         short* absmin = std::min_element(channel[idx]+100, channel[idx]+900); // ptr to min in the expected time window
@@ -292,10 +346,10 @@ int testEfficiency()
         idx = 10;
         short* chptr = channel[idx];  // ptr to channel
         // Redo minimum finding
-        short* twinmin = std::min_element(chptr+exptbin_lo, chptr+exptbin_hi); // ptr to min in the expected time window
+        short* twinmin = std::min_element(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30); // ptr to min in the expected time window
         float twinamp = *twinmin * (-1.0/4096);  // move to unit mV
         float twinint = -1.0 * std::accumulate(twinmin-20, twinmin+20, 0);
-        float fwinint = -1.0 * std::accumulate(chptr+exptbin_lo, chptr+exptbin_hi, 0); // integral in the time window
+        float fwinint = -1.0 * std::accumulate(chptr+exptbin[idx]-30, chptr+exptbin[idx]+30, 0); // integral in the time window
         int minidx = twinmin - chptr;
 
         plot1d(Form("hfake_amp[%d]", idx), amp[idx], hvec, ";amp [V]", 100, 0, 0.05);
@@ -331,17 +385,38 @@ int testEfficiency()
     if (uf > 0) h.second->SetBinContent(1, h.second->GetBinContent(1) + uf);
     if (of > 0) h.second->SetBinContent(nbin, h.second->GetBinContent(nbin) + of);
     h.second->SetLineWidth(2);
-    h.second->Write();
 
     if (h.first.find("hnum") == 0) {
       string hname = h.first;
       hname.erase(0, 4);
+      auto hden = hvec.find("hden"+hname);
+      if (hden == hvec.end()) {
+        cout << "Cannot find denomintor hist hden" << hname << endl;
+        continue;
+      }
       TH1F* h_ratio = (TH1F*) h.second->Clone(("ratio"+hname).c_str());
-      h_ratio->Divide(h_ratio, hvec.at("hden"+hname), 1, 1, "B");
+      h_ratio->Divide(h_ratio, hden->second, 1, 1, "B");
       h_ratio->Write();
+      TDirectory * dir = (TDirectory*) outfile->Get("Numerators");
+      if (dir == 0) dir = outfile->mkdir("Numerators");
+      dir->cd();
+      h.second->Write();
+      outfile->cd();
+    } else if (h.first.find("hden") == 0) {
+      TDirectory * dir = (TDirectory*) outfile->Get("Denomintor");
+      if (dir == 0) dir = outfile->mkdir("Denomintor");
+      dir->cd();
+      h.second->Write();
+      outfile->cd();
+    } else {
+      h.second->Write();
     }
   }
+
   for (auto& g : gvec) {
+    TDirectory * dir = (TDirectory*) outfile->Get("Graphs");
+    if (dir == 0) dir = outfile->mkdir("Graphs");
+    dir->cd();
     g.second->Write();
   }
 
@@ -360,5 +435,11 @@ int testEfficiency()
   // cout << Form("Efficiency for ch10 after int > 100: %.2f%%", 100.0*hvec["h_twinint[10]"]->Integral(10, -1)/hvec["h_twinint[10]"]->Integral(0, -1)) << endl;
   // cout << Form("Fake rate for ch10 after int > 100: %.2f%%", 100.0*hvec["hfake_twinint[10]"]->Integral(10, -1)/hvec["hfake_twinint[10]"]->Integral(0, -1)) << endl << endl;
 
+  outfile->Close();
+
   return 0;
+}
+
+int main() {
+  return testEfficiency();
 }
